@@ -3,6 +3,9 @@ import Navbar from './components/layout/Navbar';
 import Landing from './pages/public/Landing';
 import Login from './pages/public/Login';
 import Register from './pages/public/Register';
+import CoachPanel from "./pages/coach/CoachPanel";
+import ManageUsers from './pages/coach/ManageUsers';
+
 
 function App() {
   return (
@@ -16,6 +19,8 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/coach" element={<CoachPanel />} />
+          <Route path="/coach/users" element={<ManageUsers />} />
         </Routes>
       </div>
     </BrowserRouter>
