@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from "../common/Button";
 import { Menu, X } from 'lucide-react'; // Iconos para menú móvil
-import logo from "../../assets/images/logo.jpg";
+import logo from "../../assets/images/logo.jpeg";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

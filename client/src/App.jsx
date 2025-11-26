@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Landing from './pages/public/Landing';
-// Importa tus otras páginas aquí...
+import Login from './pages/public/Login';
+import Register from './pages/public/Register';
 
 function App() {
   return (
@@ -13,8 +14,8 @@ function App() {
       <div className="pt-20"> 
         <Routes>
           <Route path="/" element={<Landing />} />
-          {/* <Route path="/login" element={<Login />} /> */}
-          {/* <Route path="/register" element={<Register />} /> */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </div>
     </BrowserRouter>
