@@ -46,10 +46,10 @@ const Footer = () => {
           <div>
             <h3 className="text-gray-900 font-bold mb-4">Síguenos</h3>
             <div className="flex gap-4 mb-6">
-              <a href="#" className="w-10 h-10 rounded-lg border border-green-500 flex items-center justify-center text-green-500 hover:bg-green-50 transition-colors">
+              <a href="https://www.instagram.com/powerfit_copiapo/" className="w-10 h-10 rounded-lg border border-green-500 flex items-center justify-center text-green-500 hover:bg-green-50 transition-colors">
                 <Instagram size={20} />
               </a>
-              <a href="#" className="w-10 h-10 rounded-lg border border-green-500 flex items-center justify-center text-green-500 hover:bg-green-50 transition-colors">
+              <a href="https://www.facebook.com/PowerFITcopiapo/" className="w-10 h-10 rounded-lg border border-green-500 flex items-center justify-center text-green-500 hover:bg-green-50 transition-colors">
                 <Facebook size={20} />
               </a>
             </div>
