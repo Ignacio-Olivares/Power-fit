@@ -6,6 +6,7 @@ import Register from './pages/public/Register';
 import Dashboard from './pages/user/Dashboard';
 import Memberships from './pages/user/Memberships';
 import MembershipConfirmation from './pages/user/MembershipConfirmation';
+import Classes from './pages/user/Classes';
 import CoachPanel from "./pages/coach/CoachPanel";
 import ManageUsers from './pages/coach/ManageUsers';
 
@@ -25,6 +26,7 @@ function App() {
         <Route path="/user/dashboard" element={<Dashboard />} />
         <Route path="/user/memberships" element={<Memberships />} />
         <Route path="/user/memberships/confirm" element={<MembershipConfirmation />} />
+        <Route path="/user/classes" element={<Classes />} />
          
         {/* GRUPO 3: Rutas para Coaches */}
         <Route path="/coach/panel" element={<CoachPanel />} />
