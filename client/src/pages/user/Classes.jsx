@@ -131,10 +131,14 @@ const Classes = () => {
                           <Users size={12} /> {schedule.spots} cupos
                         </div>
                         
-                        {/* Botón Reservar */}
-                        <Button variant="primary" className="text-xs px-4 py-1 h-auto">
-                          Reservar
-                        </Button>
+                          <Link 
+                            to="/user/classes/booking" 
+                            state={{ schedule: schedule, classTitle: item.title }}
+                          >
+                            <Button variant="primary" className="text-xs px-4 py-1 h-auto">
+                              Reservar
+                            </Button>
+                          </Link>
                       </div>
 
                     </div>

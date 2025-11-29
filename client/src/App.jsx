@@ -7,6 +7,10 @@ import Dashboard from './pages/user/Dashboard';
 import Memberships from './pages/user/Memberships';
 import MembershipConfirmation from './pages/user/MembershipConfirmation';
 import Classes from './pages/user/Classes';
+import ClassBooking from './pages/user/ClassBooking';
+import Profile from './pages/user/Profile';
+import History from './pages/user/History';
+import MyMembership from './pages/user/MyMembership';
 import CoachPanel from "./pages/coach/CoachPanel";
 import ManageUsers from './pages/coach/ManageUsers';
 
@@ -27,6 +31,10 @@ function App() {
         <Route path="/user/memberships" element={<Memberships />} />
         <Route path="/user/memberships/confirm" element={<MembershipConfirmation />} />
         <Route path="/user/classes" element={<Classes />} />
+        <Route path="/user/classes/booking" element={<ClassBooking />} />
+        <Route path="/user/profile" element={<Profile />} />
+        <Route path="/user/history" element={<History />} />
+        <Route path="/user/mymembership" element={<MyMembership />} />
          
         {/* GRUPO 3: Rutas para Coaches */}
         <Route path="/coach/panel" element={<CoachPanel />} />

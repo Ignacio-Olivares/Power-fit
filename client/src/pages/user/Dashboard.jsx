@@ -58,7 +58,7 @@ const Dashboard = () => {
       title: "Mi Membresía",
       desc: "Detalles de tu plan actual",
       icon: <Wallet size={24} />,
-      link: "/user/my-plan",
+      link: "/user/mymembership",
       btnText: "Ver Membresía"
     }
   ];
