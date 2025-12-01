@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Button from '../../components/common/Button';
 
 const Register = () => {
+  const navigate = useNavigate();
   // Estado inicial con los campos requeridos en el documento (Fuente: 478)
   const [formData, setFormData] = useState({
     nombre: '',
@@ -21,8 +22,39 @@ const Register = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Registro enviado:', formData);
-    // Aquí conectaremos con Django más adelante
+    const submit = async () => {
+      try {
+        const payload = {
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          correo: formData.email,
+          password: formData.password
+        };
+
+        const res = await fetch('http://127.0.0.1:8000/registro/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Registro OK:', data);
+          navigate('/login');
+        } else {
+          const err = await res.json();
+          console.error('Error al registrar:', err);
+          alert('Error al registrar: ' + (err.detail || JSON.stringify(err)));
+        }
+      } catch (error) {
+        console.error('Network error:', error);
+        alert('Error de red al contactar el servidor.');
+      }
+    };
+
+    submit();
   };
 
   return (
@@ -114,7 +146,7 @@ const Register = () => {
             />
           </div>
 
-          <Button variant="primary" className="w-full py-3 mt-2">
+          <Button type="submit" variant="primary" className="w-full py-3 mt-2">
             Crear Cuenta
           </Button>
 

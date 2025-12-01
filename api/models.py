@@ -12,7 +12,7 @@ class DatosFisicos(models.Model):
     altura = models.DecimalField(max_digits=3, decimal_places=2)
 
 
-class Usuario(models.Model):
+class Registro(models.Model):
     nombre = models.CharField(max_length=15)
     apellido = models.CharField(max_length=15)
     correo = models.EmailField(max_length=50, unique=True)

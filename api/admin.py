@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AgendarClase, DatosFisicos, Usuario
+from .models import AgendarClase, DatosFisicos, Registro
 
 # Register your models here.
 
@@ -8,6 +8,12 @@ class agendarHoraAdmin(admin.ModelAdmin):
 
 admin.site.register(AgendarClase)
 
+class datosFisicosAdmin(admin.ModelAdmin):
+    list_display = ['peso', 'altura']
 
 admin.site.register(DatosFisicos)
-admin.site.register(Usuario)
+
+class registroAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'apellido', 'correo', 'password']
+    
+admin.site.register(Registro)
