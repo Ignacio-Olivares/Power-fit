@@ -17,3 +17,11 @@ class Registro(models.Model):
     apellido = models.CharField(max_length=15)
     correo = models.EmailField(max_length=50, unique=True)
     password = models.CharField(max_length=50)
+
+class Coach(models.Model):
+    nombre = models.CharField(max_length=15)
+    apellido = models.CharField(max_length=15)
+    correo = models.EmailField(max_length=50, unique=True)
+    password = models.CharField(max_length=50)
+    bibliografia = models.CharField(max_length=250)
+    especialiad = models.CharField(max_length=50)
