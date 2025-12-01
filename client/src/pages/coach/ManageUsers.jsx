@@ -36,7 +36,7 @@ const ManageUsers = () => {
     <main className="min-h-screen bg-gray-50 px-8 py-6">
       {/* Volver al panel */}
       <button
-        onClick={() => navigate("/coach")}
+        onClick={() => navigate("/coach/panel")}
         className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium mb-6"
       >
         <ArrowLeft className="w-5 h-5" />

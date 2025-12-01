@@ -13,6 +13,11 @@ import History from './pages/user/History';
 import MyMembership from './pages/user/MyMembership';
 import CoachPanel from "./pages/coach/CoachPanel";
 import ManageUsers from './pages/coach/ManageUsers';
+import ManageMemberships from './pages/coach/ManageMemberships';
+import ManageSchedule from './pages/coach/ManageSchedule';
+import ManageCoaches from './pages/coach/ManageCoaches';
+import CreateCoach from './pages/coach/CreateCoach';
+import ManagePayments from './pages/coach/ManagePayments';
 
 function App() {
   return (
@@ -39,6 +44,11 @@ function App() {
         {/* GRUPO 3: Rutas para Coaches */}
         <Route path="/coach/panel" element={<CoachPanel />} />
         <Route path="/coach/manage-users" element={<ManageUsers />} />
+        <Route path="/coach/manage-memberships" element={<ManageMemberships />} />
+        <Route path="/coach/schedule" element={<ManageSchedule />} />
+        <Route path="/coach/coaches" element={<ManageCoaches />} />
+        <Route path="/coach/create-coach" element={<CreateCoach />} />
+        <Route path="/coach/payments" element={<ManagePayments />} />
           
       </Routes>
     </BrowserRouter>

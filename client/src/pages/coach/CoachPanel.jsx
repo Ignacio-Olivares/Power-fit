@@ -30,7 +30,7 @@ const CoachPanel = () => {
           title="Membresías"
           subtitle="Ver membresías activas"
           buttonText="Ver Membresías"
-          to="/coach/memberships"
+          to="/coach/manage-memberships"
         />
 
         <DashboardCard
@@ -38,7 +38,7 @@ const CoachPanel = () => {
           title="Usuarios"
           subtitle="Ver información de usuarios"
           buttonText="Ver Usuarios"
-          to="/coach/users"
+          to="/coach/manage-users"
         />
 
         <DashboardCard
