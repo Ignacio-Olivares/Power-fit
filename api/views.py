@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer
-from .models import AgendarClase, DatosFisicos, Registro, Coach
+from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer
+from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, Usuario 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -65,7 +65,7 @@ def registro_list(request):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'PATCH'])
 def coach_list(request):
     if request.method == 'GET':
         entrenador = Coach.objects.all()
@@ -79,24 +79,64 @@ def coach_list(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-@api_view(['GET', 'PATCH', 'DELETE'])
-def coach_detail(request, pk):
-    try:
-        coach = Coach.objects.get(pk=pk)
-    except Coach.DoesNotExist:
-        return Response({"error": "Coach no encontrado"}, status=404)
-
-    if request.method == 'GET':
-        serializer = coachSerializer(coach)
-        return Response(serializer.data)
-
     if request.method == 'PATCH':
-        serializer = coachSerializer(coach, data=request.data, partial=True)
+        serializer = coachSerializer(Coach, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+    
+    
+@api_view(['POST'])
+def membresia_list(request):
+    usuario_id = request.data.get("usuario")
 
-    if request.method == 'DELETE':
-        coach.delete()
-        return Response({"mensaje": "Coach eliminado"}, status=204)
+    usuario = Usuario.objects.get(id=usuario_id)
+
+    activa = Membresia.objects.filter(usuario=usuario, is_active=True).first()
+    if activa:
+        return Response({"error": "Ya tienes una membresía activa"}, status=400)
+
+    serializer = membresiaSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(['POST', 'GET'])
+def comprar_membresia_list(request):
+
+    if request.method == 'GET':
+        return Response({"info": "Solo POST para comprar membresías."})
+
+
+    usuario_id = request.data.get("usuario")
+    plan_nombre = request.data.get("plan_nombre")
+    plan_clases = request.data.get("plan_clases")
+    plan_precio = request.data.get("plan_precio")
+
+    try:
+        usuario = Usuario.objects.get(id=usuario_id)
+    except Usuario.DoesNotExist:
+        return Response({"error": "Usuario no encontrado"}, status=400)
+
+    activa = Membresia.objects.filter(usuario=usuario, is_active=True).first()
+    if activa:
+        return Response({"error": "Ya tienes una membresía activa"}, status=400)
+
+    membresia = Membresia.objects.create(
+        usuario=usuario,
+        plan_nombre=plan_nombre,
+        plan_clases=plan_clases,
+        plan_precio=plan_precio
+    )
+
+    return Response({
+        "mensaje": "Membresía activada",
+        "usuario": usuario.nombre,
+        "plan": plan_nombre,
+        "start_date": membresia.start_date,
+        "end_date": membresia.end_date
+    }, status=201)
+
