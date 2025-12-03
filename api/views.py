@@ -91,7 +91,7 @@ def coach_list(request):
 def membresia_list(request):
     usuario_id = request.data.get("usuario")
 
-    usuario = Usuario.objects.get(id=usuario_id)
+    usuario = Registro.objects.get(id=usuario_id)
 
     activa = Membresia.objects.filter(usuario=usuario, is_active=True).first()
     if activa:
@@ -139,6 +139,28 @@ def comprar_membresia_list(request):
         "start_date": membresia.start_date,
         "end_date": membresia.end_date
     }, status=201)
+
+
+@api_view(['GET'])
+def membresia_activa(request, user_id):
+    try:
+        usuario = Registro.objects.get(id=user_id)
+    except Registro.DoesNotExist:
+        return Response({"activa": False})
+
+    membresia = Membresia.objects.filter(usuario=usuario, is_active=True).first()
+
+    if not membresia:
+        return Response({"activa": False})
+
+    return Response({
+        "activa": True,
+        "plan_nombre": membresia.plan_nombre,
+        "plan_clases": membresia.plan_clases,
+        "plan_precio": membresia.plan_precio,
+        "start_date": membresia.start_date,
+        "end_date": membresia.end_date,
+    })
 
 
 @api_view(['POST'])

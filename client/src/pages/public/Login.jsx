@@ -20,6 +20,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🟢 handleSubmit SE EJECUTÓ");
 
     const payload = {
       correo: formData.email,
@@ -34,6 +35,10 @@ const Login = () => {
       });
 
       const data = await res.json();
+
+      console.log("📦 DATA DEL BACKEND:", data);
+      console.log("➡ ID recibido:", data.id);
+
 
       if (res.ok) {
         // Guardar los datos del usuario para usar en toda la app

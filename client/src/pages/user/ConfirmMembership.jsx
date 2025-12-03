@@ -10,7 +10,7 @@ const ConfirmMembership = () => {
 
   const handleConfirmPurchase = async () => {
     const payload = {
-      usuario: userId,
+      usuario: Number(userId),
       plan_nombre: plan.name,
       plan_clases: plan.classes,
       plan_precio: plan.price
