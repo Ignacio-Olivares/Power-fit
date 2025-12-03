@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer
-from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, Usuario 
+from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -117,8 +117,8 @@ def comprar_membresia_list(request):
     plan_precio = request.data.get("plan_precio")
 
     try:
-        usuario = Usuario.objects.get(id=usuario_id)
-    except Usuario.DoesNotExist:
+        usuario = Registro.objects.get(id=usuario_id)
+    except Registro.DoesNotExist:
         return Response({"error": "Usuario no encontrado"}, status=400)
 
     activa = Membresia.objects.filter(usuario=usuario, is_active=True).first()
@@ -139,4 +139,23 @@ def comprar_membresia_list(request):
         "start_date": membresia.start_date,
         "end_date": membresia.end_date
     }, status=201)
+
+
+@api_view(['POST'])
+def login_usuario(request):
+    correo = request.data.get("correo")
+    password = request.data.get("password")
+
+    try:
+        usuario = Registro.objects.get(correo=correo, password=password)
+    except Registro.DoesNotExist:
+        return Response({"error": "Credenciales incorrectas"}, status=400)
+
+    return Response({
+        "id": usuario.id,
+        "nombre": usuario.nombre,
+        "correo": usuario.correo,
+        'apellido': usuario.apellido
+    })
+
 

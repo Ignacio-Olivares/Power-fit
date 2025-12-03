@@ -20,11 +20,6 @@ class Registro(models.Model):
     correo = models.EmailField(max_length=50, unique=True)
     password = models.CharField(max_length=50)
 
-class Usuario(models.Model):
-    nombre = models.CharField(max_length=50)
-    correo = models.EmailField(unique=True)
-    password = models.CharField(max_length=100)
-
 
 class Coach(models.Model):
     nombre = models.CharField(max_length=15)
@@ -35,7 +30,7 @@ class Coach(models.Model):
     especialiad = models.CharField(max_length=50)
 
 class Membresia(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Registro, on_delete=models.CASCADE)
 
     plan_nombre = models.CharField(max_length=50)       
     plan_clases = models.IntegerField()                
@@ -52,3 +47,4 @@ class Membresia(models.Model):
 
     def __str__(self):
         return f"{self.usuario} → {self.plan_nombre}"
+    

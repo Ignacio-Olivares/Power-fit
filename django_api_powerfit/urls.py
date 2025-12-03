@@ -27,5 +27,6 @@ urlpatterns = [
     path('coach/', views.coach_list),
     path('membresia/', views.membresia_list),
     path('comprar-membresia/', views.comprar_membresia_list),
+    path('login/', views.login_usuario)
 
 ]
