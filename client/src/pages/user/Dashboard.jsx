@@ -5,30 +5,46 @@ import Button from '../../components/common/Button';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-
-  // Obtener datos reales desde localStorage
-  const user = {
-    nombre: localStorage.getItem("userName"),
-    apellido: localStorage.getItem("userApellido"),
-    plan: null  // cambiar luego cuando conectes membresía
-  };
-
-  // Redirección si no hay sesión
-  useEffect(() => {
-    const id = localStorage.getItem("userId");
-    if (!id) {
-      navigate("/login");
-    }
-  }, [navigate]);
-
+  const [planNombre, setPlanNombre] = useState(null); // Estado para guardar el nombre del plan
   const [showToast, setShowToast] = useState(true);
 
+  // Recuperar datos básicos del usuario
+  const userNombre = localStorage.getItem("userName");
+  const userApellido = localStorage.getItem("userApellido");
+  const userId = localStorage.getItem("userId");
+
   useEffect(() => {
+    // 1. Redirección si no hay sesión
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+
+    // 2. Consultar si tiene membresía activa para mostrarla en el header
+    const fetchMembership = async () => {
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/membresia-activa/${userId}/`);
+        const data = await res.json();
+
+        if (data.activa) {
+          setPlanNombre(data.plan_nombre); // Guardamos el nombre (ej: "Plan 2")
+        } else {
+          setPlanNombre(null);
+        }
+      } catch (error) {
+        console.error("Error al cargar membresía en dashboard:", error);
+      }
+    };
+
+    fetchMembership();
+
+    // Timer para el toast de bienvenida
     const timer = setTimeout(() => {
       setShowToast(false);
     }, 4000);
     return () => clearTimeout(timer);
-  }, []);
+
+  }, [userId, navigate]);
 
   const menuItems = [
     {
@@ -76,18 +92,19 @@ const Dashboard = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-xl shrink-0">
-              {user.nombre?.charAt(0)}
+              {userNombre?.charAt(0)}
             </div>
             
             <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Bienvenid@ {user.nombre} {user.apellido}
+                  Bienvenid@ {userNombre} {userApellido}
                 </h1>
 
-                {user.plan ? (
-                  <span className="text-xs text-green-600 font-medium border border-green-200 px-2 py-0.5 rounded-full bg-green-50">
-                    {user.plan}
+                {/* AQUÍ MOSTRAMOS EL PLAN DINÁMICAMENTE */}
+                {planNombre ? (
+                  <span className="text-xs text-green-600 font-bold border border-green-200 px-3 py-1 rounded-full bg-green-50 uppercase tracking-wide">
+                    {planNombre}
                   </span>
                 ) : (
                   <span className="text-xs text-gray-400 font-medium border border-gray-200 px-2 py-0.5 rounded-full bg-gray-50">

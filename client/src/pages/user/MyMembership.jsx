@@ -4,20 +4,21 @@ import { ArrowLeft, Wallet, Calendar, CheckCircle, AlertCircle } from 'lucide-re
 import Button from '../../components/common/Button';
 
 const MyMembership = () => {
-  const userId = localStorage.getItem("userId");
-
+  const userId = localStorage.getItem("userId"); // ID del usuario logueado
   const [loading, setLoading] = useState(true);
   const [membership, setMembership] = useState(null);
 
-  // Cargar membresía desde el backend
   useEffect(() => {
+    if (!userId) return;
+
     const fetchMembership = async () => {
       try {
+        // Consultamos al backend si este usuario tiene membresía
         const res = await fetch(`http://127.0.0.1:8000/membresia-activa/${userId}/`);
         const data = await res.json();
 
         if (data.activa) {
-          setMembership(data);
+          setMembership(data); // Guardamos los datos de la membresía anidada
         } else {
           setMembership(null);
         }

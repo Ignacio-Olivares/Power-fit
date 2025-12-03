@@ -4,6 +4,7 @@ from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from django.utils import timezone
 
 # Create your views here.
 @api_view(['GET', 'POST'])
@@ -104,42 +105,44 @@ def membresia_list(request):
     return Response(serializer.errors, status=400)
 
 
-@api_view(['POST', 'GET'])
+@api_view(['POST'])
 def comprar_membresia_list(request):
-
-    if request.method == 'GET':
-        return Response({"info": "Solo POST para comprar membresías."})
-
-
+    # 1. Obtener los datos enviados desde el Frontend
     usuario_id = request.data.get("usuario")
     plan_nombre = request.data.get("plan_nombre")
     plan_clases = request.data.get("plan_clases")
     plan_precio = request.data.get("plan_precio")
 
+    # 2. Validar que el usuario existe en la base de datos
     try:
-        usuario = Registro.objects.get(id=usuario_id)
+        usuario_instancia = Registro.objects.get(id=usuario_id)
     except Registro.DoesNotExist:
-        return Response({"error": "Usuario no encontrado"}, status=400)
+        return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
-    activa = Membresia.objects.filter(usuario=usuario, is_active=True).first()
+    # 3. Validar si ya tiene una membresía activa (Opcional, regla de negocio)
+    activa = Membresia.objects.filter(usuario=usuario_instancia, is_active=True).first()
     if activa:
-        return Response({"error": "Ya tienes una membresía activa"}, status=400)
+        return Response({"error": "Ya tienes una membresía activa"}, status=status.HTTP_400_BAD_REQUEST)
 
-    membresia = Membresia.objects.create(
-        usuario=usuario,
+    # 4. Crear la membresía ANIDADA al usuario
+    # Al pasar 'usuario=usuario_instancia', Django crea la relación ForeignKey
+    nueva_membresia = Membresia.objects.create(
+        usuario=usuario_instancia, 
         plan_nombre=plan_nombre,
         plan_clases=plan_clases,
-        plan_precio=plan_precio
+        plan_precio=plan_precio,
+        start_date=timezone.now(),
+        is_active=True
+        # end_date se calcula automáticamente en el save() del modelo que ya definiste
     )
-
+    
     return Response({
-        "mensaje": "Membresía activada",
-        "usuario": usuario.nombre,
-        "plan": plan_nombre,
-        "start_date": membresia.start_date,
-        "end_date": membresia.end_date
-    }, status=201)
-
+        "mensaje": "Membresía activada exitosamente",
+        "usuario": usuario_instancia.nombre,
+        "plan": nueva_membresia.plan_nombre,
+        "start_date": nueva_membresia.start_date,
+        "end_date": nueva_membresia.end_date
+    }, status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])
 def membresia_activa(request, user_id):

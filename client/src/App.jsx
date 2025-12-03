@@ -6,6 +6,7 @@ import Register from './pages/public/Register';
 import Dashboard from './pages/user/Dashboard';
 import Memberships from './pages/user/Memberships';
 import MembershipConfirmation from './pages/user/MembershipConfirmation';
+import ConfirmMembership from './pages/user/ConfirmMembership';
 import Classes from './pages/user/Classes';
 import ClassBooking from './pages/user/ClassBooking';
 import Profile from './pages/user/Profile';
@@ -34,7 +35,7 @@ function App() {
         {/* GRUPO 2: Rutas Privadas (Sin Navbar público) */}
         <Route path="/user/dashboard" element={<Dashboard />} />
         <Route path="/user/memberships" element={<Memberships />} />
-        <Route path="/user/memberships/confirm" element={<MembershipConfirmation />} />
+        <Route path="/user/memberships/confirm" element={<ConfirmMembership />} />
         <Route path="/user/classes" element={<Classes />} />
         <Route path="/user/classes/booking" element={<ClassBooking />} />
         <Route path="/user/profile" element={<Profile />} />
