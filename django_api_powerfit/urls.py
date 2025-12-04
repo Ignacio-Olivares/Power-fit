@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('agendarClase/', views.agendarClase_list),
     path('datosFisico/', views.datosFisicos_list),
+    path("datosFisicos/<int:user_id>/", views.datosFisicos_usuario),
     path('registro/', views.registro_list),
     path('registro/<int:pk>/', views.registro_list),
     path('coach/', views.coach_list),

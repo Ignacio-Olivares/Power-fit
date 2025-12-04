@@ -3,6 +3,11 @@ from django.utils import timezone
 from datetime import timedelta
 
 # Create your models here.
+class Registro(models.Model):
+    nombre = models.CharField(max_length=15)
+    apellido = models.CharField(max_length=15)
+    correo = models.EmailField(max_length=50, unique=True)
+    password = models.CharField(max_length=50)
 
 class AgendarClase(models.Model):
     nombre = models.CharField(max_length=15)
@@ -10,15 +15,11 @@ class AgendarClase(models.Model):
 
 
 class DatosFisicos(models.Model):
-    peso =  models.DecimalField(max_digits=3, decimal_places=2)
-    altura = models.DecimalField(max_digits=3, decimal_places=2)
-
-
-class Registro(models.Model):
-    nombre = models.CharField(max_length=15)
-    apellido = models.CharField(max_length=15)
-    correo = models.EmailField(max_length=50, unique=True)
-    password = models.CharField(max_length=50)
+    usuario = models.ForeignKey(Registro, on_delete=models.CASCADE)
+    peso = models.DecimalField(max_digits=5, decimal_places=2)
+    altura = models.DecimalField(max_digits=5, decimal_places=2)
+    imc = models.DecimalField(max_digits=4, decimal_places=1)
+    fecha = models.DateField(auto_now_add=True)
 
 
 class Coach(models.Model):
