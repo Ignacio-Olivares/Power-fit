@@ -30,6 +30,6 @@ urlpatterns = [
     path('comprar-membresia/', views.comprar_membresia_list),
     path('login/', views.login_usuario),
     path("membresia-activa/<int:user_id>/", views.membresia_activa),
-
-
+    path("coaches/", views.coach_list),
+    path("coaches/<int:coach_id>/", views.coach_detail),
 ]

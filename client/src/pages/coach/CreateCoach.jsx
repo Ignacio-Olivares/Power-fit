@@ -23,13 +23,38 @@ const CreateCoach = () => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Nuevo Coach:", formData);
-    // Aquí conectarías con el backend
-    alert("Coach creado exitosamente");
-    navigate('/coach/coaches');
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    nombre: formData.nombre,
+    apellido: formData.apellido,
+    correo: formData.email,
+    password: formData.password,
+    bibliografia: formData.biografia,
+    especialidad: formData.especialidades
   };
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/coaches/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Coach creado exitosamente");
+      navigate('/coach/coaches');
+    } else {
+      alert("Error: " + JSON.stringify(data));
+    }
+  } catch (error) {
+    alert("No se pudo conectar con el servidor");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
@@ -140,7 +165,7 @@ const CreateCoach = () => {
             </div>
 
             {/* Botón Guardar */}
-            <Button variant="primary" className="w-full py-3 text-lg mt-4">
+            <Button variant="primary" type='submit' className="w-full py-3 text-lg mt-4">
               Crear Coach
             </Button>
 
