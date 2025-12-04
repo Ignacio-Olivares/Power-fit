@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Create your views here.
 @api_view(['GET', 'POST'])
@@ -109,45 +110,29 @@ def membresia_list(request):
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
 
-
 @api_view(['POST'])
 def comprar_membresia_list(request):
-    # 1. Obtener los datos enviados desde el Frontend
+    # 1. Recibir datos (incluyendo archivos)
     usuario_id = request.data.get("usuario")
-    plan_nombre = request.data.get("plan_nombre")
-    plan_clases = request.data.get("plan_clases")
-    plan_precio = request.data.get("plan_precio")
 
-    # 2. Validar que el usuario existe en la base de datos
     try:
         usuario_instancia = Registro.objects.get(id=usuario_id)
     except Registro.DoesNotExist:
-        return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Usuario no encontrado"}, status=404)
 
-    # 3. Validar si ya tiene una membresía activa (Opcional, regla de negocio)
-    activa = Membresia.objects.filter(usuario=usuario_instancia, is_active=True).first()
-    if activa:
-        return Response({"error": "Ya tienes una membresía activa"}, status=status.HTTP_400_BAD_REQUEST)
-
-    # 4. Crear la membresía ANIDADA al usuario
-    # Al pasar 'usuario=usuario_instancia', Django crea la relación ForeignKey
+    # 2. Crear membresía en estado Pendiente
+    # Nota: request.FILES contiene la imagen
     nueva_membresia = Membresia.objects.create(
-        usuario=usuario_instancia, 
-        plan_nombre=plan_nombre,
-        plan_clases=plan_clases,
-        plan_precio=plan_precio,
-        start_date=timezone.now(),
-        is_active=True
-        # end_date se calcula automáticamente en el save() del modelo que ya definiste
+        usuario=usuario_instancia,
+        plan_nombre=request.data.get("plan_nombre"),
+        plan_clases=request.data.get("plan_clases"),
+        plan_precio=request.data.get("plan_precio"),
+        comprobante=request.FILES.get('comprobante'), # Guardar imagen
+        estado='Pendiente',
+        is_active=False # Nace inactiva
     )
-    
-    return Response({
-        "mensaje": "Membresía activada exitosamente",
-        "usuario": usuario_instancia.nombre,
-        "plan": nueva_membresia.plan_nombre,
-        "start_date": nueva_membresia.start_date,
-        "end_date": nueva_membresia.end_date
-    }, status=status.HTTP_201_CREATED)
+
+    return Response({"mensaje": "Solicitud enviada"}, status=201)
 
 @api_view(['GET'])
 def membresia_activa(request, user_id):
@@ -170,6 +155,36 @@ def membresia_activa(request, user_id):
         "end_date": membresia.end_date,
     })
 
+# NUEVA VISTA: Para que el Coach apruebe
+@api_view(['POST'])
+def aprobar_membresia(request, membresia_id):
+    try:
+        membresia = Membresia.objects.get(id=membresia_id)
+        membresia.estado = 'Activa'
+        membresia.is_active = True
+        membresia.save()
+        return Response({"mensaje": "Membresía aprobada exitosamente"})
+    except Membresia.DoesNotExist:
+        return Response({"error": "Membresía no encontrada"}, status=404)
+
+# NUEVA VISTA: Listar todas las membresías (para el panel del coach)
+@api_view(['GET'])
+def listar_todas_membresias(request):
+    membresias = Membresia.objects.all().order_by('-start_date')
+    data = []
+    for m in membresias:
+        data.append({
+            "id": m.id,
+            "user": f"{m.usuario.nombre} {m.usuario.apellido}",
+            "plan_nombre": m.plan_nombre,
+            "plan_precio": m.plan_precio,
+            "plan_clases": m.plan_clases,
+            "start_date": m.start_date,
+            "status": m.estado,
+            "comprobante": m.comprobante.url if m.comprobante else None
+        })
+    return Response(data)
+
 
 @api_view(['POST'])
 def login_usuario(request):
@@ -188,4 +203,11 @@ def login_usuario(request):
         'apellido': usuario.apellido
     })
 
-
+@api_view(['DELETE'])
+def eliminar_membresia(request, membresia_id):
+    try:
+        membresia = Membresia.objects.get(id=membresia_id)
+        membresia.delete()
+        return Response({"mensaje": "Membresía eliminada"}, status=status.HTTP_204_NO_CONTENT)
+    except Membresia.DoesNotExist:
+        return Response({"error": "Membresía no encontrada"}, status=status.HTTP_404_NOT_FOUND)

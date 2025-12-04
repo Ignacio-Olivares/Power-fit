@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Loader } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 import Button from '../../components/common/Button';
 
 const ConfirmMembership = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   
   // 1. Recuperamos los datos del plan y el usuario
   const { plan } = location.state || {};
@@ -26,46 +25,18 @@ const ConfirmMembership = () => {
   // Evitar renderizado si se está redirigiendo
   if (!plan) return null;
 
-  // 3. Formateador de dinero (Igual al visual original)
+  // 3. Formateador de dinero
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(price);
   };
 
-  // 4. Lógica de Compra (Conectada al Backend)
-  const handleConfirmPurchase = async () => {
-    setLoading(true);
-
-    const payload = {
-      usuario: Number(userId),
-      plan_nombre: plan.name,
-      plan_clases: plan.classes,
-      plan_precio: plan.price
-    };
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/comprar-membresia/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert("¡Membresía activada con éxito!");
-        navigate("/user/dashboard"); 
-      } else {
-        alert("Error: " + (data.error || "No se pudo procesar la compra"));
-      }
-    } catch (error) {
-      console.error("Error de conexión:", error);
-      alert("No se pudo conectar con el servidor.");
-    } finally {
-      setLoading(false);
-    }
+  // 4. Lógica de Redirección (NO compra, solo avanza al pago)
+  const handleContinueToPayment = () => {
+    // Pasamos el objeto 'plan' a la siguiente pantalla
+    navigate("/user/memberships/payment-method", { state: { plan: plan } });
   };
 
-  // 5. Renderizado (Estilo visual idéntico a MembershipConfirmation)
+  // 5. Renderizado
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       
@@ -126,20 +97,13 @@ const ConfirmMembership = () => {
           </div>
         </div>
 
-        {/* Botón de Acción con Lógica */}
+        {/* Botón de Acción */}
         <Button 
           variant="primary" 
           className="w-full py-4 text-lg flex justify-center items-center gap-2"
-          onClick={handleConfirmPurchase}
-          disabled={loading}
+          onClick={handleContinueToPayment}
         >
-          {loading ? (
-            <>
-              Procesando <Loader className="animate-spin" size={20} />
-            </>
-          ) : (
-            "Está todo correcto, continuar al pago"
-          )}
+          Está todo correcto, continuar al pago
         </Button>
 
       </div>

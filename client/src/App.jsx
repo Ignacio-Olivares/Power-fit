@@ -5,8 +5,8 @@ import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import Dashboard from './pages/user/Dashboard';
 import Memberships from './pages/user/Memberships';
-import MembershipConfirmation from './pages/user/MembershipConfirmation';
 import ConfirmMembership from './pages/user/ConfirmMembership';
+import PaymentMethod from './pages/user/PaymentMethod';
 import Classes from './pages/user/Classes';
 import ClassBooking from './pages/user/ClassBooking';
 import Profile from './pages/user/Profile';
@@ -36,6 +36,7 @@ function App() {
         <Route path="/user/dashboard" element={<Dashboard />} />
         <Route path="/user/memberships" element={<Memberships />} />
         <Route path="/user/memberships/confirm" element={<ConfirmMembership />} />
+        <Route path="/user/memberships/payment-method" element={<PaymentMethod />} />
         <Route path="/user/classes" element={<Classes />} />
         <Route path="/user/classes/booking" element={<ClassBooking />} />
         <Route path="/user/profile" element={<Profile />} />

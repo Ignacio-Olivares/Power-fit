@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from api import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +32,9 @@ urlpatterns = [
     path('comprar-membresia/', views.comprar_membresia_list),
     path('login/', views.login_usuario),
     path("membresia-activa/<int:user_id>/", views.membresia_activa),
-
-
+    path('coach/membresias/', views.listar_todas_membresias),
+    path('coach/aprobar-membresia/<int:membresia_id>/', views.aprobar_membresia),
+    path("membresia/eliminar/<int:membresia_id>/", views.eliminar_membresia),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
