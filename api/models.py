@@ -67,3 +67,17 @@ class ClaseProgramada(models.Model):
     fecha = models.DateField()
     tipo = models.CharField(max_length=50)
     horario = models.CharField(max_length=30)
+
+
+class Pago(models.Model):
+    usuario = models.ForeignKey(Registro, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20)  
+    monto = models.IntegerField()
+    metodo = models.CharField(max_length=20)  
+    fecha = models.DateField(auto_now_add=True)
+    hora = models.TimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, default="Pendiente")  
+
+    def __str__(self):
+        return f"{self.usuario.nombre} - {self.tipo} - {self.estado}"
+

@@ -1,11 +1,14 @@
 from django.shortcuts import render
-from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer, nuevoCoachSerializer, claseProgramadaSerializer
-from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach, ClaseProgramada
+from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer, nuevoCoachSerializer, claseProgramadaSerializer, pagoSerializer
+from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach, ClaseProgramada, Pago
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from rest_framework.parsers import MultiPartParser, FormParser
+import openpyxl
+from openpyxl.styles import Font
+from django.http import HttpResponse
 
 # Create your views here.
 @api_view(['GET', 'POST'])
@@ -121,18 +124,27 @@ def comprar_membresia_list(request):
         return Response({"error": "Usuario no encontrado"}, status=404)
 
     # 2. Crear membresía en estado Pendiente
-    # Nota: request.FILES contiene la imagen
     nueva_membresia = Membresia.objects.create(
         usuario=usuario_instancia,
         plan_nombre=request.data.get("plan_nombre"),
         plan_clases=request.data.get("plan_clases"),
         plan_precio=request.data.get("plan_precio"),
-        comprobante=request.FILES.get('comprobante'), # Guardar imagen
+        comprobante=request.FILES.get('comprobante'),
         estado='Pendiente',
-        is_active=False # Nace inactiva
+        is_active=False
+    )
+
+    # 3. 🔥 Crear registro de pago automático
+    Pago.objects.create(
+        usuario=usuario_instancia,
+        tipo="membresía",
+        monto=request.data.get("plan_precio"),
+        metodo="transferencia",   # Puedes cambiarlo si lo deseas
+        estado="Pendiente"
     )
 
     return Response({"mensaje": "Solicitud enviada"}, status=201)
+
 
 @api_view(['GET'])
 def membresia_activa(request, user_id):
@@ -274,3 +286,65 @@ def horario_delete(request, pk):
     clase.delete()
     return Response({"mensaje": "Clase eliminada"}, status=204)
 
+
+@api_view(['GET'])
+def pagos_list(request):
+    fecha_inicio = request.GET.get("inicio")
+    fecha_fin = request.GET.get("fin")
+
+    pagos = Pago.objects.all().order_by("-fecha", "-hora")
+
+    if fecha_inicio and fecha_fin:
+        pagos = pagos.filter(fecha__range=[fecha_inicio, fecha_fin])
+
+    serializer = pagoSerializer(pagos, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def exportar_pagos(request):
+    fecha_inicio = request.GET.get("inicio")
+    fecha_fin = request.GET.get("fin")
+
+    pagos = Pago.objects.all()
+
+    if fecha_inicio and fecha_fin:
+        pagos = pagos.filter(fecha__range=[fecha_inicio, fecha_fin])
+
+    # Crear Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Pagos"
+
+    # Encabezados
+    headers = ["Usuario", "Tipo", "Monto", "Método", "Fecha", "Hora", "Estado"]
+    ws.append(headers)
+
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    # Datos
+    for p in pagos:
+        ws.append([
+            p.usuario.nombre,
+            p.tipo,
+            p.monto,
+            p.metodo,
+            p.fecha.strftime("%d-%m-%Y"),
+            p.hora.strftime("%H:%M"),
+            p.estado
+        ])
+
+    # CORRECCIÓN: Usar BytesIO
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="pagos.xlsx"'
+
+    return response

@@ -38,7 +38,9 @@ urlpatterns = [
     path("coaches/<int:coach_id>/", views.coach_detail),
     path('membresia/eliminar/<int:membresia_id>/', views.eliminar_membresia),
     path("horario/", views.horario_list),
-    path("horario/<int:pk>/", views.horario_delete), 
+    path("horario/<int:pk>/", views.horario_delete),
+    path("pagos/", views.pagos_list, name="pagos_list"),
+    path("pagos/exportar/", views.exportar_pagos, name="exportar_pagos"), 
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
