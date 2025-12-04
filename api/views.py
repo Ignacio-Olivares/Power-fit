@@ -172,12 +172,28 @@ def membresia_activa(request, user_id):
 def aprobar_membresia(request, membresia_id):
     try:
         membresia = Membresia.objects.get(id=membresia_id)
-        membresia.estado = 'Activa'
-        membresia.is_active = True
-        membresia.save()
-        return Response({"mensaje": "Membresía aprobada exitosamente"})
     except Membresia.DoesNotExist:
         return Response({"error": "Membresía no encontrada"}, status=404)
+
+    # 1. Activar la membresía
+    membresia.estado = 'Activa'
+    membresia.is_active = True
+    membresia.save()
+
+    # 2. Buscar el pago pendiente asociado a esta membresía
+    pago = Pago.objects.filter(
+        usuario=membresia.usuario,
+        tipo="membresía",
+        estado="Pendiente"
+    ).first()
+
+    # 3. Actualizar el pago si existe
+    if pago:
+        pago.estado = "Realizado"
+        pago.save()
+
+    return Response({"mensaje": "Membresía aprobada y pago confirmado"})
+
 
 # NUEVA VISTA: Listar todas las membresías (para el panel del coach)
 @api_view(['GET'])
@@ -292,8 +308,10 @@ def pagos_list(request):
     fecha_inicio = request.GET.get("inicio")
     fecha_fin = request.GET.get("fin")
 
-    pagos = Pago.objects.all().order_by("-fecha", "-hora")
+    # Mostrar SOLO pagos realizados
+    pagos = Pago.objects.filter(estado="Realizado").order_by("-fecha", "-hora")
 
+    # Filtro por fecha
     if fecha_inicio and fecha_fin:
         pagos = pagos.filter(fecha__range=[fecha_inicio, fecha_fin])
 
@@ -306,7 +324,8 @@ def exportar_pagos(request):
     fecha_inicio = request.GET.get("inicio")
     fecha_fin = request.GET.get("fin")
 
-    pagos = Pago.objects.all()
+    # Mostrar solo pagos realizados
+    pagos = Pago.objects.filter(estado="Realizado")
 
     if fecha_inicio and fecha_fin:
         pagos = pagos.filter(fecha__range=[fecha_inicio, fecha_fin])
@@ -320,6 +339,7 @@ def exportar_pagos(request):
     headers = ["Usuario", "Tipo", "Monto", "Método", "Fecha", "Hora", "Estado"]
     ws.append(headers)
 
+    # Encabezados en negrita
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
@@ -333,9 +353,25 @@ def exportar_pagos(request):
             p.fecha.strftime("%d-%m-%Y"),
             p.hora.strftime("%H:%M"),
             p.estado
-    ])
+        ])
 
-    # CORRECCIÓN: Usar BytesIO
+    from openpyxl.utils import get_column_letter
+
+    for column_cells in ws.columns:
+        max_length = 0
+
+        for cell in column_cells:
+            try:
+                cell_length = len(str(cell.value))
+                if cell_length > max_length:
+                    max_length = cell_length
+            except:
+                pass
+
+        adjusted_width = max_length + 2
+        column_letter = get_column_letter(column_cells[0].column)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
     from io import BytesIO
     output = BytesIO()
     wb.save(output)
@@ -345,6 +381,7 @@ def exportar_pagos(request):
         output.read(),
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    response["Content-Disposition"] = 'attachment; filename="pagos.xlsx"'
 
+    response["Content-Disposition"] = 'attachment; filename="pagos.xlsx"'
     return response
+
