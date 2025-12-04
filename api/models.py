@@ -49,7 +49,6 @@ class Membresia(models.Model):
         if not self.end_date:
             self.end_date = self.start_date + timedelta(days=30)
         super().save(*args, **kwargs)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.usuario} → {self.plan_nombre}"
