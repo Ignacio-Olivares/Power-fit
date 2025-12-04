@@ -85,6 +85,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+<<<<<<< Updated upstream
       <div className="max-w-5xl mx-auto">
 
         {/* NAV */}
@@ -93,6 +94,13 @@ const Profile = () => {
             to="/user/dashboard" 
             className="flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium"
           >
+=======
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Botón Volver */}
+        <div className="mb-8">
+          <Link to="/user/dashboard" className="flex items-center gap-2 text-gray-600 hover:text-green-500 font-medium transition-colors w-fit">
+>>>>>>> Stashed changes
             <ArrowLeft size={20} />
             Volver al Menú
           </Link>
