@@ -326,14 +326,14 @@ def exportar_pagos(request):
     # Datos
     for p in pagos:
         ws.append([
-            p.usuario.nombre,
+            f"{p.usuario.nombre} {p.usuario.apellido}",  # Nombre completo
             p.tipo,
             p.monto,
             p.metodo,
             p.fecha.strftime("%d-%m-%Y"),
             p.hora.strftime("%H:%M"),
             p.estado
-        ])
+    ])
 
     # CORRECCIÓN: Usar BytesIO
     from io import BytesIO
