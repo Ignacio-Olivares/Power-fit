@@ -49,3 +49,15 @@ class Membresia(models.Model):
         if not self.end_date:
             self.end_date = self.start_date + timedelta(days=30)
         super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.usuario} → {self.plan_nombre}"
+    
+class NuevoCoach(models.Model):
+    nombre = models.CharField(max_length=15)
+    apellido = models.CharField(max_length=15)
+    correo = models.EmailField(max_length=50, unique=True)
+    password = models.CharField(max_length=50)
+    bibliografia = models.CharField(max_length=250)
+    especialidad = models.CharField(max_length=50) 

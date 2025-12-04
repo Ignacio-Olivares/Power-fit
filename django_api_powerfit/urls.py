@@ -32,9 +32,8 @@ urlpatterns = [
     path('comprar-membresia/', views.comprar_membresia_list),
     path('login/', views.login_usuario),
     path("membresia-activa/<int:user_id>/", views.membresia_activa),
-    path('coach/membresias/', views.listar_todas_membresias),
-    path('coach/aprobar-membresia/<int:membresia_id>/', views.aprobar_membresia),
-    path("membresia/eliminar/<int:membresia_id>/", views.eliminar_membresia),
+    path("coaches/", views.coach_list),
+    path("coaches/<int:coach_id>/", views.coach_detail),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

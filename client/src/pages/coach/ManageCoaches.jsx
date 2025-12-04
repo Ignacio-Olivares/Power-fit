@@ -1,94 +1,149 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, User } from 'lucide-react';
-import Button from '../../components/common/Button';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
 
 const ManageCoaches = () => {
-  // Datos simulados basados en la imagen "coaches.png"
-  const coaches = [
-    {
-      id: 1,
-      name: "Gabriela Sosa",
-      bio: "Coach profesional especializada en baile entretenido con más de 5 años de experiencia.",
-      specialties: ["baile entretenido"]
-    },
-    {
-      id: 2,
-      name: "Javier Ortiz",
-      bio: "Entrenador multidisciplinario enfocado en fitness y baile.",
-      specialties: ["localizado", "step", "baile entretenido"]
-    },
-    {
-      id: 3,
-      name: "Cristian Rivera",
-      bio: "Especialista en ritmos latinos y baile social.",
-      specialties: ["fit salsa", "taller de bachata"]
+  const [coaches, setCoaches] = useState([]);
+  const navigate = useNavigate();
+
+  // ***** CARGAR COACHES DESDE DJANGO *****
+  const fetchCoaches = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/coaches/");
+      const data = await res.json();
+      setCoaches(data);
+    } catch (error) {
+      console.error("Error cargando coaches:", error);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchCoaches();
+  }, []);
+
+  // ***** ELIMINAR COACH *****
+  const handleDelete = async (id, nombre, apellido) => {
+    const confirmar = window.confirm(
+      `¿Estás seguro de que deseas eliminar al coach ${nombre} ${apellido}? Esta acción no se puede deshacer.`
+    );
+    if (!confirmar) return;
+
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/coaches/${id}/`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        alert("Coach eliminado correctamente.");
+        setCoaches(coaches.filter((c) => c.id !== id));
+      } else {
+        alert("Error al eliminar el coach.");
+      }
+    } catch (error) {
+      alert("No se pudo conectar al servidor.");
+    }
+  };
+
+  // ***** EDITAR COACH (con confirmación) *****
+  const handleEdit = (coach) => {
+    const confirmar = window.confirm(
+      `¿Deseas editar al coach ${coach.nombre} ${coach.apellido}?`
+    );
+    if (confirmar) {
+      navigate(`/coach/edit/${coach.id}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Botón Volver */}
-        <div className="mb-6">
-          <Link to="/coach/panel" className="flex items-center gap-2 text-gray-600 hover:text-green-500 font-medium transition-colors w-fit">
+      <div className="max-w-6xl mx-auto">
+
+        {/* BOTÓN VOLVER */}
+        <div className="mb-4">
+          <Link
+            to="/coach/panel"
+            className="flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium"
+          >
             <ArrowLeft size={20} />
-            Volver al Panel
+            Volver
           </Link>
         </div>
 
-        {/* Encabezado y Botón Crear */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-          <h1 className="text-3xl font-bold text-gray-900">Coaches</h1>
-          
-          <Link to="/coach/create-coach">
-            <Button variant="primary" className="flex items-center gap-2 shadow-lg">
-              <Plus size={20} /> Crear Nuevo Coach
-            </Button>
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-10">
+          <h1 className="text-3xl font-bold text-gray-900">Administrar Coaches</h1>
+
+          <Link
+            to="/coach/create"
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          >
+            <Plus size={20} />
+            Nuevo Coach
           </Link>
         </div>
 
-        {/* Grilla de Coaches */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coaches.map((coach) => (
-            <div key={coach.id} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              
-              {/* Nombre e Icono */}
-              <div className="flex items-center gap-4 mb-4">
-                {/* Avatar simulado */}
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                  <User size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">{coach.name}</h3>
-              </div>
+        {/* LISTA DE COACHES */}
+        {coaches.length === 0 ? (
+          <p className="text-gray-500">No hay coaches registrados.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {coaches.map((coach) => (
+              <div
+                key={coach.id}
+                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition"
+              >
+                {/* HEADER DE TARJETA */}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {coach.nombre} {coach.apellido}
+                    </h2>
+                    <p className="text-gray-500 text-sm">{coach.correo}</p>
+                  </div>
 
-              {/* Biografía */}
-              <div className="mb-6">
-                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Bio</p>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {coach.bio}
-                </p>
-              </div>
-
-              {/* Especialidades (Tags) */}
-              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase mb-2">Especialidades</p>
-                <div className="flex flex-wrap gap-2">
-                  {coach.specialties.map((tag, index) => (
-                    <span 
-                      key={index} 
-                      className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full border border-gray-200"
+                  <div className="flex gap-3">
+                    {/* EDITAR (VERDE) */}
+                    <button
+                      className="text-green-600 hover:text-green-700"
+                      onClick={() => handleEdit(coach)}
                     >
-                      {tag}
-                    </span>
-                  ))}
+                      <Edit size={20} />
+                    </button>
+
+                    {/* ELIMINAR (ROJO) */}
+                    <button
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() =>
+                        handleDelete(coach.id, coach.nombre, coach.apellido)
+                      }
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* BIOGRAFÍA */}
+                <p className="mt-4 text-gray-700 leading-relaxed">
+                  {coach.bibliografia}
+                </p>
+
+                {/* ESPECIALIDADES (TAGS) */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {(coach.especialidad || "")
+                    .split(",")
+                    .map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full border border-gray-200"
+                      >
+                        {tag.trim()}
+                      </span>
+                    ))}
                 </div>
               </div>
-
-            </div>
-          ))}
-        </div>
-
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

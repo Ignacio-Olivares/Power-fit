@@ -19,6 +19,7 @@ import ManageSchedule from './pages/coach/ManageSchedule';
 import ManageCoaches from './pages/coach/ManageCoaches';
 import CreateCoach from './pages/coach/CreateCoach';
 import ManagePayments from './pages/coach/ManagePayments';
+import EditCoach from "./pages/coach/EditCoach";
 
 function App() {
   return (
@@ -49,9 +50,10 @@ function App() {
         <Route path="/coach/manage-memberships" element={<ManageMemberships />} />
         <Route path="/coach/schedule" element={<ManageSchedule />} />
         <Route path="/coach/coaches" element={<ManageCoaches />} />
-        <Route path="/coach/create-coach" element={<CreateCoach />} />
         <Route path="/coach/payments" element={<ManagePayments />} />
-          
+        <Route path="/coach/create" element={<CreateCoach />} />
+        <Route path="/coach/edit/:id" element={<EditCoach />} />
+        
       </Routes>
     </BrowserRouter>
   );

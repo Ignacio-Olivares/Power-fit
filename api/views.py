@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer
-from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia
+from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer, nuevoCoachSerializer
+from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -211,3 +211,41 @@ def eliminar_membresia(request, membresia_id):
         return Response({"mensaje": "Membresía eliminada"}, status=status.HTTP_204_NO_CONTENT)
     except Membresia.DoesNotExist:
         return Response({"error": "Membresía no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET', 'POST'])
+def coach_list(request):
+    if request.method == 'GET':
+        coaches = NuevoCoach.objects.all()
+        serializer = nuevoCoachSerializer(coaches, many=True)
+        return Response(serializer.data)
+
+    if request.method == 'POST':
+        serializer = nuevoCoachSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    
+@api_view(['GET', 'PUT', 'DELETE'])
+def coach_detail(request, coach_id):
+
+    try:
+        coach = NuevoCoach.objects.get(id=coach_id)
+    except NuevoCoach.DoesNotExist:
+        return Response({"error": "Coach no encontrado"}, status=404)
+
+    if request.method == 'GET':
+        serializer = nuevoCoachSerializer(coach)
+        return Response(serializer.data)
+
+    if request.method == 'PUT':
+        serializer = nuevoCoachSerializer(coach, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    if request.method == 'DELETE':
+        coach.delete()
+        return Response({"mensaje": "Coach eliminado"}, status=204)
+
