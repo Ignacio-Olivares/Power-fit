@@ -1,190 +1,290 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Edit2, Trash2, Plus, X, Save } from 'lucide-react';
-import Button from '../../components/common/Button';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Edit2, Plus, Trash2, X } from "lucide-react";
+import Button from "../../components/common/Button";
+
+// Tipos de clase
+const CLASS_TYPES = [
+  "Baile entretenido",
+  "Fit salsa",
+  "Localizado",
+  "Step",
+  "Taller salsa",
+  "Taller bachata",
+  "Fusión Fit",
+];
+
+// Horarios permitidos
+const CLASS_TIMES = [
+  "09:00 - 10:20",
+  "10:30 - 12:00",
+  "18:00 - 19:00",
+  "19:00 - 20:15",
+  "20:15 - 21:10",
+];
+
+// Días de la semana
+const WEEK_DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+// Formatear fecha LOCAL a YYYY-MM-DD (sin UTC)
+const formatLocalDate = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+// Obtener fecha de cada día (lunes–sábado) de la semana actual
+const getDateForDay = (dayIndex) => {
+  const today = new Date();
+  const dow = today.getDay(); // 0 domingo, 1 lunes, ..., 6 sábado
+
+  const diffToMonday = (dow + 6) % 7; // lunes = 0
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - diffToMonday);
+
+  const target = new Date(monday);
+  target.setDate(monday.getDate() + dayIndex);
+
+  return formatLocalDate(target); // ← ya no usamos toISOString()
+};
+
+// Convierte una fecha en formato YYYY-MM-DD a una cadena de fecha local
+// Evita que `new Date("YYYY-MM-DD")` sea interpretado como UTC
+const toLocalDateString = (ymd) => {
+  if (!ymd) return "";
+  const parts = ymd.split("-").map((p) => Number(p));
+  const [y, m, d] = parts;
+  const local = new Date(y, m - 1, d);
+  return local.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
 
 const ManageSchedule = () => {
-  // Estado para controlar el modo de edición
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [schedule, setSchedule] = useState([]);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
 
-  // Datos simulados idénticos a tu imagen "horario.png"
-  const [schedule, setSchedule] = useState([
-    {
-      id: 1, day: "Lunes", date: "1 de diciembre",
-      classes: [
-        { id: 101, name: "Baile Entretenido", time: "18:00-19:00" },
-        { id: 102, name: "Step", time: "19:00-20:00" }
-      ]
-    },
-    {
-      id: 2, day: "Martes", date: "2 de diciembre",
-      classes: [
-        { id: 201, name: "Localizado", time: "18:00-19:00" },
-        { id: 202, name: "Fit Salsa", time: "19:00-20:00" }
-      ]
-    },
-    {
-      id: 3, day: "Miércoles", date: "3 de diciembre",
-      classes: [
-        { id: 301, name: "Step", time: "18:00-19:00" },
-        { id: 302, name: "Baile Entretenido", time: "19:00-20:00" },
-        { id: 303, name: "Taller Bachata", time: "20:00-21:00" }
-      ]
-    },
-    {
-      id: 4, day: "Jueves", date: "4 de diciembre",
-      classes: [
-        { id: 401, name: "Fit Salsa", time: "18:00-19:00" },
-        { id: 402, name: "Localizado", time: "19:00-20:00" }
-      ]
-    },
-    {
-      id: 5, day: "Viernes", date: "5 de diciembre",
-      classes: [
-        { id: 501, name: "Baile Entretenido", time: "18:00-19:00" },
-        { id: 502, name: "Step", time: "19:00-20:00" },
-        { id: 503, name: "Taller Bachata", time: "20:00-21:00" }
-      ]
-    },
-    {
-      id: 6, day: "Sábado", date: "6 de diciembre",
-      classes: [
-        { id: 601, name: "Localizado", time: "10:00-11:00" },
-        { id: 602, name: "Fit Salsa", time: "11:00-12:00" },
-        { id: 603, name: "Megafit", time: "18:30-19:30" }
-      ]
-    },
-    {
-      id: 7, day: "Domingo", date: "7 de diciembre",
-      classes: [
-        { id: 701, name: "Taller Bachata", time: "17:00-18:00" }
-      ]
-    }
-  ]);
+  const [newClass, setNewClass] = useState({ type: "", time: "" });
 
-  // Manejo de la autenticación para editar (Figura 38)
-  const handleAuthSubmit = (e) => {
-    e.preventDefault();
-    if (passwordInput === "12345") { // Contraseña del documento
-      setIsEditMode(true);
-      setShowAuthModal(false);
-      setPasswordInput("");
-    } else {
-      alert("Contraseña incorrecta");
+  // -------- CARGAR HORARIO DESDE DJANGO --------
+  const fetchSchedule = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/horario/");
+      const data = await res.json();
+
+      const formatted = WEEK_DAYS.map((day, index) => ({
+        day,
+        date: getDateForDay(index),
+        classes: data.filter((c) => c.dia === day),
+      }));
+
+      setSchedule(formatted);
+    } catch (error) {
+      console.log("Error cargando horario:", error);
     }
   };
 
-  // Simulación de eliminar una clase
-  const handleDeleteClass = (dayId, classId) => {
-    if (window.confirm("¿Seguro que deseas eliminar esta clase?")) {
-      setSchedule(schedule.map(day => {
-        if (day.id === dayId) {
-          return { ...day, classes: day.classes.filter(c => c.id !== classId) };
-        }
-        return day;
-      }));
+  useEffect(() => {
+    fetchSchedule();
+  }, []);
+
+  // -------- CONTRASEÑA PARA EDITAR --------
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    if (passwordInput === "Gabriela") {
+      setIsEditing(true);
+      setShowPasswordModal(false);
+      setPasswordInput("");
+    } else {
+      alert("Contraseña incorrecta.");
     }
+  };
+
+  // -------- AGREGAR CLASE (POST) --------
+  const addClassToDay = async () => {
+    if (!newClass.type || !newClass.time) {
+      alert("Debes seleccionar tipo de clase y horario.");
+      return;
+    }
+
+    const payload = {
+      dia: schedule[selectedDay].day,
+      fecha: schedule[selectedDay].date,
+      tipo: newClass.type,
+      horario: newClass.time,
+    };
+
+    const res = await fetch("http://127.0.0.1:8000/horario/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      fetchSchedule();
+      setSelectedDay(null);
+      setNewClass({ type: "", time: "" });
+    } else {
+      alert("Error al guardar la clase");
+    }
+  };
+
+  // -------- ELIMINAR CLASE (DELETE) --------
+  const deleteClass = async (classId) => {
+    if (!window.confirm("¿Eliminar esta clase?")) return;
+
+    await fetch(`http://127.0.0.1:8000/horario/${classId}/`, {
+      method: "DELETE",
+    });
+
+    fetchSchedule();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Botón Volver */}
-        <div className="mb-6">
-          <Link to="/coach/panel" className="flex items-center gap-2 text-gray-600 hover:text-green-500 font-medium transition-colors w-fit">
-            <ArrowLeft size={20} />
-            Volver al Panel
-          </Link>
-        </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
 
-        {/* Encabezado y Botón Modificar */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Horario Semanal</h1>
-          
-          {isEditMode ? (
-            <div className="flex justify-center gap-3">
-              <Button onClick={() => setIsEditMode(false)} className="bg-gray-500 hover:bg-gray-600 flex items-center gap-2">
-                <Save size={18} /> Guardar Cambios
-              </Button>
-              <Button className="bg-green-600 hover:bg-green-700 flex items-center gap-2">
-                <Plus size={18} /> Agregar Clase
-              </Button>
-            </div>
-          ) : (
-            <Button onClick={() => setShowAuthModal(true)} variant="primary" className="flex items-center gap-2 mx-auto">
+        {/* Volver */}
+        <Link
+          to="/coach/panel"
+          className="flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium mb-6"
+        >
+          <ArrowLeft size={20} /> Volver al Panel
+        </Link>
+
+        {/* Título */}
+        <h1 className="text-3xl font-bold text-center mb-8">Horario Semanal</h1>
+
+        {!isEditing && (
+          <div className="text-center mb-4">
+            <Button
+              variant="primary"
+              onClick={() => setShowPasswordModal(true)}
+              className="flex items-center gap-2 mx-auto"
+            >
               <Edit2 size={18} /> Modificar Horario
             </Button>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Grilla de Horarios (4 columnas en PC como la imagen) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {schedule.map((day) => (
-            <div key={day.id} className={`bg-white rounded-xl shadow-sm border p-6 transition-all ${isEditMode ? 'border-green-200 ring-1 ring-green-100' : 'border-gray-200'}`}>
-              
-              <h3 className="font-bold text-gray-800 mb-1">{day.day} {day.date}</h3>
-              <div className="h-px w-full bg-gray-100 mb-4"></div>
+        {/* TARJETAS DE DÍAS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {schedule.map((day, index) => (
+            <div key={index} className="bg-white shadow-sm border rounded-2xl p-5">
+              <h2 className="font-bold text-lg text-gray-800">
+                {day.day} — {toLocalDateString(day.date)}
+              </h2>
 
-              <div className="space-y-3">
-                {day.classes.length > 0 ? (
-                  day.classes.map((cls) => (
-                    <div key={cls.id} className="flex justify-between items-start group">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-700">{cls.name}</p>
-                        <p className="text-xs text-gray-500">{cls.time}</p>
-                      </div>
-                      
-                      {/* Botón Eliminar (Solo en modo edición) */}
-                      {isEditMode && (
-                        <button 
-                          onClick={() => handleDeleteClass(day.id, cls.id)}
-                          className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-gray-400 italic">Sin clases programadas</p>
+              <div className="mt-3 space-y-3">
+                {day.classes.length === 0 && (
+                  <p className="text-gray-400 text-sm">Sin clases</p>
                 )}
+
+                {day.classes.map((cls) => (
+                  <div
+                    key={cls.id}
+                    className="bg-gray-50 p-3 rounded-lg flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-semibold">{cls.tipo}</p>
+                      <p className="text-gray-500 text-sm">{cls.horario}</p>
+                    </div>
+
+                    {isEditing && (
+                      <button
+                        className="text-green-500 hover:text-red-700"
+                        onClick={() => deleteClass(cls.id)}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
 
+              {isEditing && (
+                <Button
+                  className="w-full mt-4 flex items-center gap-2"
+                  onClick={() => setSelectedDay(index)}
+                >
+                  <Plus size={18} /> Agregar clase
+                </Button>
+              )}
             </div>
           ))}
         </div>
 
-        {/* MODAL DE AUTENTICACIÓN (Figura 38) */}
-        {showAuthModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full animate-slide-in">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Ingresa la contraseña</h3>
-                <button onClick={() => setShowAuthModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X size={24} />
+        {/* MODAL AGREGAR CLASE */}
+        {selectedDay !== null && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-xl">
+              <div className="flex justify-between mb-4">
+                <h2 className="text-xl font-bold">
+                  Agregar clase — {schedule[selectedDay].day}
+                </h2>
+                <button onClick={() => setSelectedDay(null)}>
+                  <X />
                 </button>
               </div>
-              
-              <p className="text-gray-500 text-sm mb-6">
-                Se requiere una contraseña para modificar el horario.
-              </p>
 
-              <form onSubmit={handleAuthSubmit}>
-                <div className="mb-6">
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Contraseña</label>
-                  <input 
-                    type="password" 
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
-                    placeholder="•••••"
-                    autoFocus
-                  />
-                </div>
-                <Button variant="primary" className="w-full justify-center">
+              <label className="text-sm font-semibold">Tipo de clase</label>
+              <select
+                className="w-full border p-2 rounded mb-3"
+                value={newClass.type}
+                onChange={(e) =>
+                  setNewClass({ ...newClass, type: e.target.value })
+                }
+              >
+                <option value="">Seleccionar...</option>
+                {CLASS_TYPES.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+
+              <label className="text-sm font-semibold">Horario</label>
+              <select
+                className="w-full border p-2 rounded mb-4"
+                value={newClass.time}
+                onChange={(e) =>
+                  setNewClass({ ...newClass, time: e.target.value })
+                }
+              >
+                <option value="">Seleccionar...</option>
+                {CLASS_TIMES.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+
+              <Button variant="primary" className="w-full" onClick={addClassToDay}>
+                Guardar clase
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL CONTRASEÑA */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">
+              <h2 className="text-xl font-bold mb-4">Ingresa la contraseña</h2>
+
+              <form onSubmit={handlePasswordSubmit}>
+                <input
+                  type="password"
+                  className="w-full border p-3 rounded mb-4"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="••••••"
+                />
+
+                <Button type="submit" variant="primary" className="w-full">
                   Confirmar
                 </Button>
               </form>

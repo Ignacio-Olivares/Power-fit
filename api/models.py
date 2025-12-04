@@ -28,7 +28,7 @@ class Coach(models.Model):
     correo = models.EmailField(max_length=50, unique=True)
     password = models.CharField(max_length=50)
     bibliografia = models.CharField(max_length=250)
-    especialiad = models.CharField(max_length=50)
+    especialidad = models.CharField(max_length=50)
 
 class Membresia(models.Model):
     usuario = models.ForeignKey(Registro, on_delete=models.CASCADE)
@@ -60,3 +60,10 @@ class NuevoCoach(models.Model):
     password = models.CharField(max_length=50)
     bibliografia = models.CharField(max_length=250)
     especialidad = models.CharField(max_length=50) 
+
+
+class ClaseProgramada(models.Model):
+    dia = models.CharField(max_length=20) 
+    fecha = models.DateField()
+    tipo = models.CharField(max_length=50)
+    horario = models.CharField(max_length=30)

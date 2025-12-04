@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer, nuevoCoachSerializer
-from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach
+from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer, nuevoCoachSerializer, claseProgramadaSerializer
+from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach, ClaseProgramada
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -248,4 +248,29 @@ def coach_detail(request, coach_id):
     if request.method == 'DELETE':
         coach.delete()
         return Response({"mensaje": "Coach eliminado"}, status=204)
+    
+
+@api_view(['GET', 'POST'])
+def horario_list(request):
+    if request.method == 'GET':
+        clases = ClaseProgramada.objects.all().order_by('dia', 'horario')
+        serializer = claseProgramadaSerializer(clases, many=True)
+        return Response(serializer.data)
+
+    if request.method == 'POST':
+        serializer = claseProgramadaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+@api_view(['DELETE'])
+def horario_delete(request, pk):
+    try:
+        clase = ClaseProgramada.objects.get(id=pk)
+    except ClaseProgramada.DoesNotExist:
+        return Response({"error": "Clase no encontrada"}, status=404)
+
+    clase.delete()
+    return Response({"mensaje": "Clase eliminada"}, status=204)
 
