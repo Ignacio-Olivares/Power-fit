@@ -152,13 +152,22 @@ const ManageSchedule = () => {
       <div className="max-w-6xl mx-auto">
 
         {/* Volver */}
-        <Link
-          to="/coach/panel"
-          className="flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium mb-6"
-        >
-          <ArrowLeft size={20} /> Volver al Panel
-        </Link>
-
+        <button
+          onClick={() => {
+            if (isEditing) {
+            // Si estaba en edición, vuelve al modo visualización
+            setIsEditing(false);
+            setSelectedDay(null);
+          } else {
+            // Si NO estaba editando, vuelve al panel
+              window.location.href = "/coach/panel";
+             }
+          }}
+            className="flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium mb-6"
+            >
+            <ArrowLeft size={20} /> Volver
+            </button>
+            
         {/* Título */}
         <h1 className="text-3xl font-bold text-center mb-8">Horario Semanal</h1>
 
