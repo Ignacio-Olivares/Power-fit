@@ -474,45 +474,40 @@ def exportar_pagos(request):
 
 @api_view(['POST'])
 def reservar_clase(request):
-    clase_id = request.data.get("clase_id")
-    usuario_id = request.data.get("usuario_id")
+    clase_id = request.data.get("clase")
+    usuario_id = request.data.get("usuario")
 
-    # Validar que ambos campos existen
     if not clase_id or not usuario_id:
         return Response({"error": "Faltan datos"}, status=400)
 
-    # Buscar clase
+    # Obtener clase y usuario
     try:
         clase = ClaseProgramada.objects.get(id=clase_id)
-    except ClaseProgramada.DoesNotExist:
-        return Response({"error": "Clase no encontrada"}, status=404)
-
-    # Buscar usuario (IMPORTANTE: Registro, NO Usuario de Django)
-    try:
         usuario = Registro.objects.get(id=usuario_id)
-    except Registro.DoesNotExist:
-        return Response({"error": "Usuario no encontrado"}, status=404)
+    except (ClaseProgramada.DoesNotExist, Registro.DoesNotExist):
+        return Response({"error": "Clase o usuario no encontrado"}, status=404)
 
-    # Validar cupos
+    # No permitir sobrecupo
     if clase.cupos_disponibles <= 0:
         return Response({"error": "No quedan cupos disponibles"}, status=400)
 
-    # Validar si el usuario ya reservó esta clase
-    if Asistencia.objects.filter(usuario=usuario, clase=clase).exists():
-        return Response({"error": "Ya reservaste esta clase"}, status=400)
+    # Evitar reservas duplicadas
+    if ReservaClase.objects.filter(clase=clase, usuario=usuario).exists():
+        return Response({"error": "Ya estás inscrito en esta clase"}, status=400)
 
     # Crear reserva
-    Asistencia.objects.create(
+    ReservaClase.objects.create(
         clase=clase,
         usuario=usuario,
-        presente=False
+        estado="Reservado"
     )
 
-    # Reducir cupos
+    # Descontar cupo
     clase.cupos_disponibles -= 1
     clase.save()
 
-    return Response({"mensaje": "Reserva exitosa", "cupos_restantes": clase.cupos_disponibles}, status=201)
+    return Response({"mensaje": "Clase reservada correctamente"}, status=201)
+
 
 
 @api_view(['GET'])

@@ -21,19 +21,20 @@ const Classes = () => {
     "Step": stepImg,
   };
 
-  // Orden correcto de los días
   const ordenarDias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-  // Generar un mapa { 'Lunes': '05-12-2025', ... } con las fechas de la semana
+  // 🔵 Fechas de esta semana en horario chileno
   const getDatesThisWeek = () => {
-    // Obtener la fecha actual en zona horaria de Chile en formato YYYY-MM-DD usando Intl
-    const chileYmd = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
-    const [y, m, d] = chileYmd.split('-').map((p) => Number(p));
+    const chileYmd = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+    }).format(new Date());
+
+    const [y, m, d] = chileYmd.split("-").map(Number);
     const chileToday = new Date(y, m - 1, d);
 
-    // Calcular el lunes de la semana actual (lunes = 1)
-    const dow = chileToday.getDay(); // 0 domingo, 1 lunes ... 6 sábado
-    const diffToMonday = (dow + 6) % 7; // lunes = 0
+    const dow = chileToday.getDay();
+    const diffToMonday = (dow + 6) % 7;
+
     const monday = new Date(chileToday);
     monday.setDate(chileToday.getDate() - diffToMonday);
 
@@ -41,11 +42,11 @@ const Classes = () => {
     for (let i = 0; i < ordenarDias.length; i++) {
       const dt = new Date(monday);
       dt.setDate(monday.getDate() + i);
-      // Formato local chileno dd-mm-aaaa
-      days[ordenarDias[i]] = dt.toLocaleDateString('es-CL', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
+
+      days[ordenarDias[i]] = dt.toLocaleDateString("es-CL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
       });
     }
 
@@ -54,28 +55,27 @@ const Classes = () => {
 
   const fechasSemana = getDatesThisWeek();
 
-  // Obtener la fecha actual en Chile en formato YYYY-MM-DD (para comparaciones)
-  const getChileYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
+  const getChileYmd = () =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(
+      new Date()
+    );
 
   const isClassInPast = (clase) => {
     try {
       const chileYmd = getChileYmd();
 
-      // Preferir campo `fecha` de la API si existe (formato YYYY-MM-DD)
       let classYmd = clase.fecha || null;
 
-      // Si no viene `fecha`, usar el mapa `fechasSemana` (que está en formato dd-mm-aaaa)
       if (!classYmd && fechasSemana[clase.dia]) {
-        const [dd, mm, yyyy] = fechasSemana[clase.dia].split('-');
+        const [dd, mm, yyyy] = fechasSemana[clase.dia].split("-");
         classYmd = `${yyyy}-${mm}-${dd}`;
       }
 
       if (!classYmd) return false;
 
-      // Comparación lexicográfica funciona para YYYY-MM-DD
       return classYmd < chileYmd;
     } catch (e) {
-      console.error('Error comparando fechas:', e);
+      console.error("Error comparando fechas:", e);
       return false;
     }
   };
@@ -103,7 +103,7 @@ const Classes = () => {
 
     const claseObj = clases.find((c) => c.id === claseId);
     if (isClassInPast(claseObj)) {
-      alert('No puedes reservar una clase que ya pasó.');
+      alert("No puedes reservar una clase que ya pasó.");
       return;
     }
 
@@ -120,6 +120,15 @@ const Classes = () => {
 
       if (res.ok) {
         alert("Clase reservada exitosamente 🎉");
+
+        // 🔥 DESCONTAR CUPO EN EL FRONTEND SIN RECARGAR
+        setClases((prev) =>
+          prev.map((c) =>
+            c.id === claseId
+              ? { ...c, cupos_disponibles: c.cupos_disponibles - 1 }
+              : c
+          )
+        );
       } else {
         alert(data.error || "No se pudo reservar la clase");
       }
@@ -130,7 +139,6 @@ const Classes = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10">
-
       <div className="mb-6">
         <Link
           to="/user/dashboard"
@@ -143,36 +151,35 @@ const Classes = () => {
 
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Clases Disponibles</h1>
 
-      {/* Nueva grilla compacta */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-
         {clases.map((clase) => (
           <div
             key={clase.id}
             className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200"
           >
-            {/* Día como badge superior (muestra también la fecha en hora Chile) */}
+            {/* Día + Fecha */}
             <div className="bg-green-600 text-white text-center py-2 font-semibold">
               <div className="flex flex-col">
                 <span>{clase.dia}</span>
-                <span className="text-xs font-normal">{fechasSemana[clase.dia] || ''}</span>
+                <span className="text-xs font-normal">
+                  {fechasSemana[clase.dia] || ""}
+                </span>
               </div>
             </div>
 
-            {/* Imagen */}
             <img
               src={imagenes[clase.tipo] || fondoImg}
               alt={clase.tipo}
               className="w-full h-44 object-cover"
             />
 
-            {/* Información */}
             <div className="p-5">
               <h3 className="text-xl font-bold text-gray-800">{clase.tipo}</h3>
               <p className="text-green-600 font-medium">{clase.horario}</p>
 
               <p className="text-gray-500 mt-2">
-                <strong>Cupos disponibles:</strong> {clase.cupos_disponibles}
+                <strong>Cupos disponibles: </strong>
+                {clase.cupos_disponibles}
               </p>
 
               {isClassInPast(clase) ? (
@@ -191,7 +198,6 @@ const Classes = () => {
             </div>
           </div>
         ))}
-
       </div>
 
       {clases.length === 0 && (
@@ -199,7 +205,6 @@ const Classes = () => {
           No hay clases programadas por ahora.
         </p>
       )}
-
     </div>
   );
 };
