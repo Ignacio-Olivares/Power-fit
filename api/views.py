@@ -9,8 +9,23 @@ from rest_framework.parsers import MultiPartParser, FormParser
 import openpyxl
 from openpyxl.styles import Font
 from django.http import HttpResponse
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from functools import wraps
 
 # Create your views here.
+
+def solo_admin(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        rol = request.headers.get("Rol")
+        # Solo admin puede ejecutar estas vistas
+        if rol != "admin":
+            return Response({"error": "No autorizado. Solo admin puede realizar esta acción."}, status=403)
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 @api_view(['GET', 'POST'])
 def agendarClase_list(request):
     if request.method == 'GET':
@@ -169,6 +184,7 @@ def membresia_activa(request, user_id):
 
 # NUEVA VISTA: Para que el Coach apruebe
 @api_view(['POST'])
+@solo_admin
 def aprobar_membresia(request, membresia_id):
     try:
         membresia = Membresia.objects.get(id=membresia_id)
@@ -219,19 +235,43 @@ def login_usuario(request):
     correo = request.data.get("correo")
     password = request.data.get("password")
 
-    try:
-        usuario = Registro.objects.get(correo=correo, password=password)
-    except Registro.DoesNotExist:
-        return Response({"error": "Credenciales incorrectas"}, status=400)
+    # 1️⃣ ¿Es Gabriela o un coach?
+    user = authenticate(username=correo, password=password)
 
-    return Response({
-        "id": usuario.id,
-        "nombre": usuario.nombre,
-        "correo": usuario.correo,
-        'apellido': usuario.apellido
-    })
+    if user:
+        if user.is_superuser:
+            return Response({
+                "id": user.id,
+                "nombre": user.first_name,
+                "apellido": user.last_name,
+                "correo": user.username,
+                "rol": "admin"
+            })
+        else:
+            return Response({
+                "id": user.id,
+                "nombre": user.first_name,
+                "apellido": user.last_name,
+                "correo": user.username,
+                "rol": "coach"
+            })
+
+    try:
+        u = Registro.objects.get(correo=correo, password=password)
+        return Response({
+            "id": u.id,
+            "nombre": u.nombre,
+            "apellido": u.apellido,
+            "correo": u.correo,
+            "rol": "usuario"
+        })
+    except Registro.DoesNotExist:
+        pass
+
+    return Response({"error": "Credenciales incorrectas"}, status=400)
 
 @api_view(['DELETE'])
+@solo_admin
 def eliminar_membresia(request, membresia_id):
     try:
         membresia = Membresia.objects.get(id=membresia_id)
@@ -242,17 +282,54 @@ def eliminar_membresia(request, membresia_id):
 
 @api_view(['GET', 'POST'])
 def coach_list(request):
+
+    # 📌 GET — Cualquier coach puede ver la lista
     if request.method == 'GET':
         coaches = NuevoCoach.objects.all()
         serializer = nuevoCoachSerializer(coaches, many=True)
         return Response(serializer.data)
 
+    # 📌 POST — SOLO admin puede crear coaches
     if request.method == 'POST':
-        serializer = nuevoCoachSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+
+        rol = request.headers.get("Rol")  # <- viene del front
+        if rol != "admin":
+            return Response(
+                {"error": "No autorizado. Solo el administrador puede crear coaches."},
+                status=403
+            )
+
+        nombre = request.data.get("nombre")
+        apellido = request.data.get("apellido")
+        correo = request.data.get("correo")
+        password = request.data.get("password")
+        bibliografia = request.data.get("bibliografia")
+        especialidad = request.data.get("especialidad")
+
+        # 1️⃣ Crear registro en NuevoCoach
+        coach = NuevoCoach.objects.create(
+            nombre=nombre,
+            apellido=apellido,
+            correo=correo,
+            password=password,  # referencia, login usa Django Auth
+            bibliografia=bibliografia,
+            especialidad=especialidad
+        )
+
+        # 2️⃣ Crear usuario Django Auth
+        user = User.objects.create_user(
+            username=correo,
+            email=correo,
+            password=password,
+            first_name=nombre,
+            last_name=apellido,
+            is_staff=False,       # NO admin
+            is_superuser=False    # NO superadmin
+        )
+
+        return Response({"mensaje": "Coach creado correctamente"}, status=201)
+
+
     
 @api_view(['GET', 'PUT', 'DELETE'])
 def coach_detail(request, coach_id):

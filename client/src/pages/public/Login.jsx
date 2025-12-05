@@ -37,24 +37,32 @@ const Login = () => {
       const data = await res.json();
 
       console.log("📦 DATA DEL BACKEND:", data);
-      console.log("➡ ID recibido:", data.id);
 
-
-      if (res.ok) {
-        // Guardar los datos del usuario para usar en toda la app
-        localStorage.setItem("userId", data.id);
-        localStorage.setItem("userName", data.nombre);
-        localStorage.setItem("userEmail", data.correo);
-        localStorage.setItem("userApellido", data.apellido);
-
-        // Redirigir al dashboard del usuario
-        navigate("/user/dashboard");
-      } else {
+      if (!res.ok) {
         alert(data.error || "Credenciales incorrectas");
+        return;
+      }
+
+      // Guardar datos en localStorage
+      localStorage.setItem("userId", data.id);
+      localStorage.setItem("userName", data.nombre);
+      localStorage.setItem("userApellido", data.apellido);
+      localStorage.setItem("userCorreo", data.correo);
+      localStorage.setItem("userRol", data.rol);
+
+      // 🔥 REDIRECCIÓN SEGÚN EL ROL
+      if (data.rol === "admin") {
+        navigate("/coach/panel"); // Panel completo
+      }
+      else if (data.rol === "coach") {
+        navigate("/coach/panel"); // Panel limitado
+      }
+      else {
+        navigate("/user/dashboard"); // Usuario normal
       }
 
     } catch (error) {
-      console.error("Network error:", error);
+      console.error("❌ Network error:", error);
       alert("No se pudo conectar con el servidor");
     }
   };

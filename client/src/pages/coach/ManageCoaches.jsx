@@ -112,7 +112,7 @@ const ManageCoaches = () => {
 
                     {/* ELIMINAR (ROJO) */}
                     <button
-                      className="text-red-500 hover:text-red-700"
+                      className="text-green-500 hover:text-green-700"
                       onClick={() =>
                         handleDelete(coach.id, coach.nombre, coach.apellido)
                       }
