@@ -1,5 +1,6 @@
 // src/pages/user/Classes.jsx
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
@@ -13,6 +14,7 @@ import Button from "../../components/common/Button";
 
 const Classes = () => {
   const [clases, setClases] = useState([]);
+  const navigate = useNavigate();
 
   const imagenes = {
     "Baile entretenido": baileImg,
@@ -99,42 +101,15 @@ const Classes = () => {
   }, []);
 
   const reservar = async (claseId) => {
-    const userId = localStorage.getItem("userId");
-
+    // Redirigir al flujo de pago/confirmación
+    // useNavigate is already called at top-level; use that `navigate` here
     const claseObj = clases.find((c) => c.id === claseId);
     if (isClassInPast(claseObj)) {
       alert("No puedes reservar una clase que ya pasó.");
       return;
     }
 
-    const payload = { clase: claseId, usuario: userId };
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/reservar-clase/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert("Clase reservada exitosamente 🎉");
-
-        // 🔥 DESCONTAR CUPO EN EL FRONTEND SIN RECARGAR
-        setClases((prev) =>
-          prev.map((c) =>
-            c.id === claseId
-              ? { ...c, cupos_disponibles: c.cupos_disponibles - 1 }
-              : c
-          )
-        );
-      } else {
-        alert(data.error || "No se pudo reservar la clase");
-      }
-    } catch (error) {
-      alert("No se pudo conectar al servidor");
-    }
+    navigate('/user/checkout', { state: { clase: claseObj } });
   };
 
   return (
@@ -149,7 +124,7 @@ const Classes = () => {
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Clases Disponibles</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">Clases Disponibles</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {clases.map((clase) => (

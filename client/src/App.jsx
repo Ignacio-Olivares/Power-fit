@@ -9,6 +9,7 @@ import ConfirmMembership from './pages/user/ConfirmMembership';
 import PaymentMethod from './pages/user/PaymentMethod';
 import Classes from './pages/user/Classes';
 import ClassBooking from './pages/user/ClassBooking';
+import PaymentChoice from './pages/user/PaymentChoice';
 import Profile from './pages/user/Profile';
 import History from './pages/user/History';
 import MyMembership from './pages/user/MyMembership';
@@ -41,6 +42,7 @@ function App() {
         <Route path="/user/memberships/payment-method" element={<PaymentMethod />} />
         <Route path="/user/classes" element={<Classes />} />
         <Route path="/user/classes/booking" element={<ClassBooking />} />
+        <Route path="/user/checkout" element={<PaymentChoice />} />
         <Route path="/user/profile" element={<Profile />} />
         <Route path="/user/history" element={<History />} />
         <Route path="/user/mymembership" element={<MyMembership />} />

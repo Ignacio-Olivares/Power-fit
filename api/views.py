@@ -230,6 +230,49 @@ def listar_todas_membresias(request):
     return Response(data)
 
 
+@api_view(['GET'])
+def mis_reservas(request, user_id):
+    """Devuelve las reservas (historial de clases) de un usuario."""
+    reservas = ReservaClase.objects.filter(usuario_id=user_id).order_by('-fecha_reserva')
+
+    data = []
+    for r in reservas:
+        data.append({
+            'id': r.id,
+            'clase_id': r.clase.id,
+            'tipo': r.clase.tipo,
+            'dia': r.clase.dia,
+            'fecha': r.clase.fecha.strftime('%Y-%m-%d') if r.clase.fecha else None,
+            'horario': r.clase.horario,
+            'reserved_at': r.fecha_reserva.strftime('%Y-%m-%d %H:%M:%S'),
+            'estado': r.estado,
+        })
+
+    return Response(data)
+
+
+@api_view(['GET'])
+def mis_pagos(request, user_id):
+    """Devuelve los pagos realizados/registrados por un usuario."""
+    pagos = Pago.objects.filter(usuario_id=user_id).order_by('-fecha', '-hora')
+
+    data = []
+    for p in pagos:
+        data.append({
+            'id': p.id,
+            'usuario': p.usuario.id,
+            'usuario_nombre': getattr(p.usuario, 'nombre', None),
+            'monto': p.monto,
+            'tipo': p.tipo,
+            'metodo': p.metodo,
+            'fecha': p.fecha.strftime('%Y-%m-%d'),
+            'hora': p.hora.strftime('%H:%M:%S') if p.hora else None,
+            'estado': p.estado,
+        })
+
+    return Response(data)
+
+
 @api_view(['POST'])
 def login_usuario(request):
     correo = request.data.get("correo")
@@ -476,6 +519,8 @@ def exportar_pagos(request):
 def reservar_clase(request):
     clase_id = request.data.get("clase")
     usuario_id = request.data.get("usuario")
+    usar_membresia = request.data.get("usar_membresia")
+    pagar_efectivo = request.data.get("pagar_efectivo")
 
     if not clase_id or not usuario_id:
         return Response({"error": "Faltan datos"}, status=400)
@@ -494,8 +539,62 @@ def reservar_clase(request):
     # Evitar reservas duplicadas
     if ReservaClase.objects.filter(clase=clase, usuario=usuario).exists():
         return Response({"error": "Ya estás inscrito en esta clase"}, status=400)
+    # Si se indica usar membresía, verificar y descontar
+    if str(usar_membresia).lower() in ["1", "true", "yes"]:
+        membresia = Membresia.objects.filter(usuario=usuario, is_active=True).first()
+        if not membresia:
+            return Response({"error": "No tienes una membresía activa"}, status=400)
 
-    # Crear reserva
+        if membresia.plan_clases <= 0:
+            return Response({"error": "Tu membresía no tiene clases disponibles"}, status=400)
+
+        # Crear reserva
+        ReservaClase.objects.create(
+            clase=clase,
+            usuario=usuario,
+            estado="Reservado"
+        )
+
+        # Descontar cupo
+        clase.cupos_disponibles -= 1
+        clase.save()
+
+        # Descontar una clase de la membresía
+        membresia.plan_clases -= 1
+        if membresia.plan_clases <= 0:
+            membresia.is_active = False
+        membresia.save()
+
+        return Response({"mensaje": "Clase reservada usando membresía"}, status=201)
+
+    # Si se paga en efectivo (pago inmediato para la clase)
+    if str(pagar_efectivo).lower() in ["1", "true", "yes"]:
+        # Crear pago en efectivo y marcarlo como realizado
+        try:
+            pago = Pago.objects.create(
+                usuario=usuario,
+                tipo="clase",
+                monto=3500,
+                metodo="efectivo",
+                estado="Realizado"
+            )
+        except Exception:
+            return Response({"error": "No se pudo procesar el pago"}, status=500)
+
+        # Crear reserva
+        ReservaClase.objects.create(
+            clase=clase,
+            usuario=usuario,
+            estado="Reservado"
+        )
+
+        # Descontar cupo
+        clase.cupos_disponibles -= 1
+        clase.save()
+
+        return Response({"mensaje": "Clase reservada y pagada en efectivo", "pago_id": pago.id}, status=201)
+
+    # Si no se especifica método, crear reserva normal (sin pago)
     ReservaClase.objects.create(
         clase=clase,
         usuario=usuario,

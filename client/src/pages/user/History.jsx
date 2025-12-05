@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, DollarSign, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
@@ -6,48 +6,81 @@ const History = () => {
   // Estado para controlar qué pestaña está activa ('classes' o 'payments')
   const [activeTab, setActiveTab] = useState('classes');
 
-  // Datos simulados: Historial de Clases (Figura 17)
-  const classHistory = [
-    {
-      id: 1,
-      title: "Baile Entretenido",
-      date: "Lunes - 18:00",
-      reservedDate: "26 de octubre de 2025",
-      status: "reservada" // Estados: reservada, asistida, no_asistida
-    },
-    {
-      id: 2,
-      title: "Step",
-      date: "Miércoles - 19:00",
-      reservedDate: "23 de octubre de 2025",
-      status: "asistida"
-    },
-    {
-      id: 3,
-      title: "Fit Salsa",
-      date: "Viernes - 18:00",
-      reservedDate: "21 de octubre de 2025",
-      status: "no_asistida"
-    }
-  ];
+  // Estados reales: cargaremos desde el backend
+  const [classHistory, setClassHistory] = useState([]);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
-  // Datos simulados: Historial de Pagos (Figura 18)
-  const paymentHistory = [
-    {
-      id: 1,
-      amount: 3500,
-      description: "Clase - Efectivo",
-      date: "26 de octubre de 2025, 00:35",
-      status: "pendiente" // Estados: pendiente, pagado, anulado
-    },
-    {
-      id: 2,
-      amount: 20000,
-      description: "Plan Mensual - Transferencia",
-      date: "28 de septiembre de 2025, 10:00",
-      status: "pagado"
-    }
-  ];
+  const userId = localStorage.getItem('userId');
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchClasses = async () => {
+      setLoadingClasses(true);
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/mis-reservas/${userId}/`);
+        if (!res.ok) throw new Error('Error al cargar reservas');
+        const data = await res.json();
+
+        const mapped = data.map((r) => ({
+          id: r.id,
+          title: r.tipo,
+          date: `${r.dia} - ${r.horario}`,
+          reservedDate: r.reserved_at ? new Date(r.reserved_at).toLocaleString('es-CL') : null,
+          status: (function mapEstado(e){
+            if(!e) return 'reservada';
+            const lower = e.toString().toLowerCase();
+            if(lower.includes('reserv')) return 'reservada';
+            if(lower.includes('presen')) return 'asistida';
+            if(lower.includes('ausen') || lower.includes('ausente')) return 'no_asistida';
+            if(lower.includes('cancel') || lower.includes('anul')) return 'cancelada';
+            return lower;
+          })(r.estado)
+        }));
+
+        setClassHistory(mapped);
+      } catch (error) {
+        console.error('Error obteniendo reservas:', error);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    const fetchPayments = async () => {
+      setLoadingPayments(true);
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/mis-pagos/${userId}/`);
+        if (!res.ok) throw new Error('Error al cargar pagos');
+        const data = await res.json();
+
+        const mapped = data.map((p) => ({
+          id: p.id,
+          amount: p.monto,
+          description: `${p.tipo} - ${p.metodo}`,
+          date: p.fecha ? `${new Date(p.fecha).toLocaleDateString('es-CL')} ${p.hora ? p.hora : ''}` : null,
+          status: (function mapPago(e){
+            if(!e) return 'pendiente';
+            const lower = e.toString().toLowerCase();
+            if(lower.includes('realiz') || lower.includes('pag')) return 'pagado';
+            if(lower.includes('pend')) return 'pendiente';
+            if(lower.includes('anul') || lower.includes('no')) return 'anulado';
+            return lower;
+          })(p.estado)
+        }));
+
+        setPaymentHistory(mapped);
+      } catch (error) {
+        console.error('Error obteniendo pagos:', error);
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+
+    fetchClasses();
+    fetchPayments();
+  }, [userId]);
 
   // Función auxiliar para formatear dinero
   const formatPrice = (price) => {
@@ -63,6 +96,8 @@ const History = () => {
         return <span className="flex items-center gap-1 text-xs font-bold bg-green-50 text-green-600 px-3 py-1 rounded-full"><CheckCircle size={12}/> Asistida</span>;
       case 'no_asistida':
         return <span className="flex items-center gap-1 text-xs font-bold bg-red-50 text-red-600 px-3 py-1 rounded-full"><XCircle size={12}/> No Asistida</span>;
+      case 'cancelada':
+        return <span className="flex items-center gap-1 text-xs font-bold bg-gray-50 text-gray-600 px-3 py-1 rounded-full"><XCircle size={12}/> Cancelada</span>;
       default:
         return null;
     }
@@ -123,41 +158,53 @@ const History = () => {
           {/* VISTA 1: CLASES */}
           {activeTab === 'classes' && (
             <div className="animate-fade-in space-y-4">
-              {classHistory.map((item) => (
-                <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar className="text-green-500" size={18} />
-                      <h3 className="font-bold text-gray-900">{item.title}</h3>
+              {loadingClasses ? (
+                <p className="text-center text-gray-500 py-6">Cargando historial de clases...</p>
+              ) : classHistory.length === 0 ? (
+                <p className="text-center text-gray-500 py-6">No tienes reservas todavía.</p>
+              ) : (
+                classHistory.map((item) => (
+                  <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar className="text-green-500" size={18} />
+                        <h3 className="font-bold text-gray-900">{item.title}</h3>
+                      </div>
+                      <p className="text-sm text-gray-600 ml-6">{item.date}</p>
+                      <p className="text-xs text-gray-400 ml-6 mt-1">Reservado: {item.reservedDate}</p>
                     </div>
-                    <p className="text-sm text-gray-600 ml-6">{item.date}</p>
-                    <p className="text-xs text-gray-400 ml-6 mt-1">Reservado: {item.reservedDate}</p>
+                    <div>
+                      {getClassStatusBadge(item.status)}
+                    </div>
                   </div>
-                  <div>
-                    {getClassStatusBadge(item.status)}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 
           {/* VISTA 2: PAGOS */}
           {activeTab === 'payments' && (
             <div className="animate-fade-in space-y-4">
-              {paymentHistory.map((item) => (
-                <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl font-bold text-gray-900">{formatPrice(item.amount)}</span>
+              {loadingPayments ? (
+                <p className="text-center text-gray-500 py-6">Cargando historial de pagos...</p>
+              ) : paymentHistory.length === 0 ? (
+                <p className="text-center text-gray-500 py-6">No tienes pagos registrados.</p>
+              ) : (
+                paymentHistory.map((item) => (
+                  <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl font-bold text-gray-900">{formatPrice(item.amount)}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{item.description}</p>
+                      <p className="text-xs text-gray-400 mt-1">Fecha: {item.date}</p>
                     </div>
-                    <p className="text-sm text-gray-600">{item.description}</p>
-                    <p className="text-xs text-gray-400 mt-1">Fecha: {item.date}</p>
+                    <div>
+                      {getPaymentStatusBadge(item.status)}
+                    </div>
                   </div>
-                  <div>
-                    {getPaymentStatusBadge(item.status)}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 

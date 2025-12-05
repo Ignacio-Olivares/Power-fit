@@ -45,10 +45,12 @@ urlpatterns = [
     # Reservas
     path("reservar-clase/", views.reservar_clase),
     path("reservar-clase/<int:clase_id>/", views.reservar_clase),
+    path("mis-reservas/<int:user_id>/", views.mis_reservas),
 
     # Pagos
     path("pagos/", views.pagos_list, name="pagos_list"),
     path("pagos/exportar/", views.exportar_pagos, name="exportar_pagos"),
+    path("mis-pagos/<int:user_id>/", views.mis_pagos),
 ]
 
 if settings.DEBUG:
