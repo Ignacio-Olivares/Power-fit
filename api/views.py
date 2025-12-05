@@ -629,7 +629,11 @@ def asistentes_clase(request, clase_id):
     except ClaseProgramada.DoesNotExist:
         return Response({"error": "Clase no encontrada"}, status=404)
 
-    reservas = Asistencia.objects.filter(clase=clase)
+    # Use ReservaClase (las reservas reales) para listar los inscritos.
+    # El endpoint `reservar_clase` crea objetos ReservaClase, no Asistencia,
+    # por lo que debemos consultarlas aquí para mostrar todos los alumnos
+    # que se han inscrito en la clase.
+    reservas = ReservaClase.objects.filter(clase=clase)
 
     data = [
         {
@@ -638,7 +642,8 @@ def asistentes_clase(request, clase_id):
             "nombre": r.usuario.nombre,
             "apellido": r.usuario.apellido,
             "nombre_completo": f"{r.usuario.nombre} {r.usuario.apellido}",
-            "presente": r.presente
+            # Estado de presencia se almacena en ReservaClase.estado (Presente/Ausente/Pendiente)
+            "presente": True if r.estado == "Presente" else False
         }
         for r in reservas
     ]
