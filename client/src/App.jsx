@@ -20,6 +20,7 @@ import ManageCoaches from './pages/coach/ManageCoaches';
 import CreateCoach from './pages/coach/CreateCoach';
 import ManagePayments from './pages/coach/ManagePayments';
 import EditCoach from "./pages/coach/EditCoach";
+import ManageAttendance from "./pages/coach/ManageAttendance";
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
         <Route path="/coach/payments" element={<ManagePayments />} />
         <Route path="/coach/create" element={<CreateCoach />} />
         <Route path="/coach/edit/:id" element={<EditCoach />} />
+        <Route path="/coach/asistencia" element={<ManageAttendance />} />
         
       </Routes>
     </BrowserRouter>

@@ -24,44 +24,43 @@ const CreateCoach = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const payload = {
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      correo: formData.email,
-      password: formData.password,
-      bibliografia: formData.biografia,
-      especialidad: formData.especialidades
-    };
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/coaches/", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Rol": localStorage.getItem("userRol") || "usuario"   // ← 🔥 IMPORTANTE
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert("Coach creado exitosamente");
-        navigate('/coach/coaches');
-      } else {
-        alert("Error: " + JSON.stringify(data));
-      }
-    } catch (error) {
-      alert("No se pudo conectar con el servidor");
-    }
+  const payload = {
+    nombre: formData.nombre,
+    apellido: formData.apellido,
+    correo: formData.email,
+    password: formData.password,
+    bibliografia: formData.biografia,
+    especialidad: formData.especialidades
   };
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/coaches/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Coach creado exitosamente");
+      navigate('/coach/coaches');
+    } else {
+      alert("Error: " + JSON.stringify(data));
+    }
+  } catch (error) {
+    alert("No se pudo conectar con el servidor");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
       <div className="w-full max-w-2xl">
         
+        {/* Botón Volver */}
         <div className="mb-6">
           <Link to="/coach/coaches" className="flex items-center gap-2 text-gray-600 hover:text-green-500 font-medium transition-colors w-fit">
             <ArrowLeft size={20} />
@@ -69,12 +68,14 @@ const CreateCoach = () => {
           </Link>
         </div>
 
+        {/* Formulario (Card Blanca) */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 md:p-10">
           
           <h1 className="text-2xl font-bold text-gray-900 mb-8">Crear Nuevo Coach</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             
+            {/* Fila 1: Nombre y Apellido */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre *</label>
@@ -100,6 +101,7 @@ const CreateCoach = () => {
               </div>
             </div>
 
+            {/* Correo */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Correo Electrónico *</label>
               <input 
@@ -112,6 +114,7 @@ const CreateCoach = () => {
               />
             </div>
 
+            {/* Teléfono */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
               <input 
@@ -123,6 +126,7 @@ const CreateCoach = () => {
               />
             </div>
 
+            {/* Contraseña */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Contraseña *</label>
               <input 
@@ -135,6 +139,7 @@ const CreateCoach = () => {
               />
             </div>
 
+            {/* Biografía */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Biografía</label>
               <textarea 
@@ -146,6 +151,7 @@ const CreateCoach = () => {
               ></textarea>
             </div>
 
+            {/* Especialidades */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Especialidades (separadas por coma)</label>
               <input 
@@ -158,6 +164,7 @@ const CreateCoach = () => {
               />
             </div>
 
+            {/* Botón Guardar */}
             <Button variant="primary" type='submit' className="w-full py-3 text-lg mt-4">
               Crear Coach
             </Button>

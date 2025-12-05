@@ -1,27 +1,47 @@
 // src/pages/coach/CoachPanel.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import {ArrowLeft, CreditCard, Users, Calendar, User, DollarSign,} from "lucide-react";
+import {
+  CreditCard,
+  Users,
+  Calendar,
+  User,
+  DollarSign,
+  LogOut,
+} from "lucide-react";
 import DashboardCard from "../../components/common/DashboardCard";
 
 const CoachPanel = () => {
   const navigate = useNavigate();
 
+  // 🔹 Obtener nombre y apellido del coach logueado
+  const nombre = localStorage.getItem("userName") || "";
+  const apellido = localStorage.getItem("userApellido") || "";
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-6">
-      {/* Volver al menú principal */}
-      <button
-        type="button"
-        onClick={() => navigate("/")}
-        className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium mb-8"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span>Volver al Menú Principal</span>
-      </button>
 
-      {/* Título */}
-      <h1 className="text-3xl font-bold text-gray-900">Panel de Coach</h1>
-      <p className="text-gray-500 mb-10">Bienvenid@ Coach PowerFit</p>
+      {/* 🔴 BOTÓN CERRAR SESIÓN — alineado a la derecha */}
+      <div className="flex justify-end mb-6">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-500 hover:bg-red-50 font-medium rounded-lg transition"
+        >
+          <LogOut size={18} />
+          Cerrar Sesión
+        </button>
+      </div>
+
+      {/* 🔹 Bienvenida con nombre del coach */}
+      <h1 className="text-3xl font-bold text-gray-900">
+        Bienvenid@ {nombre} {apellido}
+      </h1>
+      <p className="text-gray-500 mb-10">Panel de Coach PowerFit</p>
 
       {/* Grid de tarjetas */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -49,6 +69,14 @@ const CoachPanel = () => {
           to="/coach/schedule"
         />
 
+        <DashboardCard
+          Icon={Users}
+          title="Asistencia"
+          subtitle="Control de asistencia diaria"
+          buttonText="Ver Clases de Hoy"
+          to="/coach/asistencia"
+        />
+          
         <DashboardCard
           Icon={User}
           title="Coaches"

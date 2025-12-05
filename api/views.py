@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .serializer import agendarClaseSerializer, datosFisicosSerializer, registroSerializer, coachSerializer, membresiaSerializer, nuevoCoachSerializer, claseProgramadaSerializer, pagoSerializer
-from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach, ClaseProgramada, Pago
+from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach, ClaseProgramada, Pago, ReservaClase, Asistencia
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -354,11 +354,20 @@ def coach_detail(request, coach_id):
         coach.delete()
         return Response({"mensaje": "Coach eliminado"}, status=204)
     
+DIAS_ORDEN = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
 
 @api_view(['GET', 'POST'])
 def horario_list(request):
+
     if request.method == 'GET':
-        clases = ClaseProgramada.objects.all().order_by('dia', 'horario')
+        clases = ClaseProgramada.objects.all()
+
+        # Ordenar primero por día (usando DIAS_ORDEN), luego por horario
+        clases = sorted(
+            clases,
+            key=lambda c: (DIAS_ORDEN.index(c.dia), c.horario)
+        )
+
         serializer = claseProgramadaSerializer(clases, many=True)
         return Response(serializer.data)
 
@@ -368,6 +377,7 @@ def horario_list(request):
             serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+
 
 @api_view(['DELETE'])
 def horario_delete(request, pk):
@@ -462,3 +472,95 @@ def exportar_pagos(request):
     response["Content-Disposition"] = 'attachment; filename="pagos.xlsx"'
     return response
 
+@api_view(['POST'])
+def reservar_clase(request):
+    clase_id = request.data.get("clase_id")
+    usuario_id = request.data.get("usuario_id")
+
+    # Validar que ambos campos existen
+    if not clase_id or not usuario_id:
+        return Response({"error": "Faltan datos"}, status=400)
+
+    # Buscar clase
+    try:
+        clase = ClaseProgramada.objects.get(id=clase_id)
+    except ClaseProgramada.DoesNotExist:
+        return Response({"error": "Clase no encontrada"}, status=404)
+
+    # Buscar usuario (IMPORTANTE: Registro, NO Usuario de Django)
+    try:
+        usuario = Registro.objects.get(id=usuario_id)
+    except Registro.DoesNotExist:
+        return Response({"error": "Usuario no encontrado"}, status=404)
+
+    # Validar cupos
+    if clase.cupos_disponibles <= 0:
+        return Response({"error": "No quedan cupos disponibles"}, status=400)
+
+    # Validar si el usuario ya reservó esta clase
+    if Asistencia.objects.filter(usuario=usuario, clase=clase).exists():
+        return Response({"error": "Ya reservaste esta clase"}, status=400)
+
+    # Crear reserva
+    Asistencia.objects.create(
+        clase=clase,
+        usuario=usuario,
+        presente=False
+    )
+
+    # Reducir cupos
+    clase.cupos_disponibles -= 1
+    clase.save()
+
+    return Response({"mensaje": "Reserva exitosa", "cupos_restantes": clase.cupos_disponibles}, status=201)
+
+
+@api_view(['GET'])
+def clases_de_dia(request):
+    # Día actual (Lunes, Martes, Miércoles...)
+    dias = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sabado","Domingo"]
+    dia_actual = dias[timezone.now().weekday()]
+
+    # Buscar clases por el campo `dia` (no fecha)
+    clases = ClaseProgramada.objects.filter(dia=dia_actual)
+
+    serializer = claseProgramadaSerializer(clases, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def asistentes_clase(request, clase_id):
+    try:
+        clase = ClaseProgramada.objects.get(id=clase_id)
+    except ClaseProgramada.DoesNotExist:
+        return Response({"error": "Clase no encontrada"}, status=404)
+
+    reservas = Asistencia.objects.filter(clase=clase)
+
+    data = [
+        {
+            "id": r.id,
+            "usuario_id": r.usuario.id,
+            "nombre": r.usuario.nombre,
+            "apellido": r.usuario.apellido,
+            "nombre_completo": f"{r.usuario.nombre} {r.usuario.apellido}",
+            "presente": r.presente
+        }
+        for r in reservas
+    ]
+
+    return Response(data)
+
+
+
+@api_view(['PATCH'])
+def marcar_presente(request, reserva_id):
+    try:
+        reserva = ReservaClase.objects.get(id=reserva_id)
+    except ReservaClase.DoesNotExist:
+        return Response({"error": "Reserva no encontrada"}, status=404)
+
+    reserva.estado = "Presente"
+    reserva.save()
+
+    return Response({"mensaje": "Asistencia registrada"})

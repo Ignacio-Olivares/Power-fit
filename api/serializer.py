@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach, ClaseProgramada, Pago
+from .models import AgendarClase, DatosFisicos, Registro, Coach, Membresia, NuevoCoach, ClaseProgramada, Pago, Asistencia
 
 class agendarClaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,4 +41,12 @@ class claseProgramadaSerializer(serializers.ModelSerializer):
 class pagoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pago
+        fields = '__all__'
+
+class AsistenciaSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.CharField(source='usuario.nombre', read_only=True)
+    usuario_apellido = serializers.CharField(source='usuario.apellido', read_only=True)
+
+    class Meta:
+        model = Asistencia
         fields = '__all__'

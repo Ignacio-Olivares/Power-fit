@@ -63,10 +63,15 @@ class NuevoCoach(models.Model):
 
 
 class ClaseProgramada(models.Model):
-    dia = models.CharField(max_length=20) 
+    dia = models.CharField(max_length=20)
     fecha = models.DateField()
     tipo = models.CharField(max_length=50)
     horario = models.CharField(max_length=30)
+    cupos_disponibles = models.IntegerField(default=20)  
+
+    def __str__(self):
+        return f"{self.dia} {self.fecha} - {self.horario}"
+
 
 
 class Pago(models.Model):
@@ -81,3 +86,20 @@ class Pago(models.Model):
     def __str__(self):
         return f"{self.usuario.nombre} - {self.tipo} - {self.estado}"
 
+class ReservaClase(models.Model):
+    usuario = models.ForeignKey(Registro, on_delete=models.CASCADE)
+    clase = models.ForeignKey(ClaseProgramada, on_delete=models.CASCADE)
+    fecha_reserva = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, default="Pendiente")  # Pendiente, Presente, Ausente
+
+    def __str__(self):
+        return f"{self.usuario.nombre} {self.usuario.apellido} → {self.clase.tipo}"
+
+class Asistencia(models.Model):
+    clase = models.ForeignKey(ClaseProgramada, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Registro, on_delete=models.CASCADE)
+    presente = models.BooleanField(default=False)
+    fecha_reserva = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.usuario.nombre} en {self.clase}"
