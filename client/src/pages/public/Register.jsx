@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react'; // Importamos CheckCircle
 import Button from '../../components/common/Button';
 
 const Register = () => {
   const navigate = useNavigate();
-  // Estado inicial con los campos requeridos en el documento (Fuente: 478)
+  
+  // Estado para los datos del formulario
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
     email: '',
     password: ''
   });
+
+  // Estado para controlar la visibilidad del modal de éxito
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -40,9 +44,8 @@ const Register = () => {
         });
 
         if (res.ok) {
-          const data = await res.json();
-          console.log('Registro OK:', data);
-          navigate('/login');
+          // CAMBIO: En lugar de navegar inmediatamente, mostramos el modal
+          setShowSuccessModal(true);
         } else {
           const err = await res.json();
           console.error('Error al registrar:', err);
@@ -58,7 +61,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 relative">
       
       {/* Botón Volver */}
       <div className="absolute top-24 left-4 md:left-8">
@@ -68,16 +71,15 @@ const Register = () => {
         </Link>
       </div>
 
-      {/* Tarjeta de Registro (Basada en Figura 9) */}
+      {/* Tarjeta de Registro */}
       <div className="bg-white w-full max-w-md rounded-2xl shadow-lg p-8 border border-gray-100">
         
-        {/* Encabezado */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Powerfit Copiapó</h1>
           <p className="text-gray-500 text-sm mt-1">Accede a tu cuenta o crea una nueva</p>
         </div>
 
-        {/* Pestañas (Tabs) */}
+        {/* Pestañas */}
         <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
           <Link to="/login" className="flex-1 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 text-center">
             Iniciar Sesión
@@ -90,7 +92,6 @@ const Register = () => {
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Nombre */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre</label>
             <input 
@@ -104,7 +105,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Apellido */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Apellido</label>
             <input 
@@ -118,7 +118,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Correo */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Correo electrónico o teléfono</label>
             <input 
@@ -132,7 +131,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Contraseña */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Contraseña</label>
             <input 
@@ -152,6 +150,36 @@ const Register = () => {
 
         </form>
       </div>
+
+      {/* --- MODAL DE ÉXITO (PANTALLA EMERGENTE) --- */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-gray-100 transform transition-all scale-100">
+            
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+              <CheckCircle className="h-10 w-10 text-green-600" />
+            </div>
+            
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              ¡Registro Exitoso!
+            </h3>
+            
+            <p className="text-gray-500 mb-8">
+              Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión para acceder a la plataforma.
+            </p>
+            
+            <Button 
+              variant="primary" 
+              className="w-full"
+              onClick={() => navigate('/login')}
+            >
+              Ir a Iniciar Sesión
+            </Button>
+            
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
