@@ -184,7 +184,6 @@ def membresia_activa(request, user_id):
 
 # NUEVA VISTA: Para que el Coach apruebe
 @api_view(['POST'])
-@solo_admin
 def aprobar_membresia(request, membresia_id):
     try:
         membresia = Membresia.objects.get(id=membresia_id)
@@ -314,7 +313,6 @@ def login_usuario(request):
     return Response({"error": "Credenciales incorrectas"}, status=400)
 
 @api_view(['DELETE'])
-@solo_admin
 def eliminar_membresia(request, membresia_id):
     try:
         membresia = Membresia.objects.get(id=membresia_id)
