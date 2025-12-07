@@ -333,13 +333,6 @@ def coach_list(request):
     # 📌 POST — SOLO admin puede crear coaches
     if request.method == 'POST':
 
-        rol = request.headers.get("Rol")  # <- viene del front
-        if rol != "admin":
-            return Response(
-                {"error": "No autorizado. Solo el administrador puede crear coaches."},
-                status=403
-            )
-
         nombre = request.data.get("nombre")
         apellido = request.data.get("apellido")
         correo = request.data.get("correo")
@@ -609,12 +602,22 @@ def reservar_clase(request):
 
 @api_view(['GET'])
 def clases_de_dia(request):
-    # Día actual (Lunes, Martes, Miércoles...)
-    dias = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sabado","Domingo"]
-    dia_actual = dias[timezone.now().weekday()]
+    # Intentamos obtener las clases usando la fecha local del servidor (más fiable que comparar nombres)
+    hoy = timezone.localdate()
 
-    # Buscar clases por el campo `dia` (no fecha)
-    clases = ClaseProgramada.objects.filter(dia=dia_actual)
+    # Buscar por fecha (si las clases se guardan con fecha exacta)
+    clases = ClaseProgramada.objects.filter(fecha=hoy)
+
+    # Si no hay clases por fecha, hacemos fallback a la búsqueda por nombre de día
+    if not clases.exists():
+        dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        # weekday(): 0=Lunes ... 6=Domingo
+        try:
+            dia_actual = dias[timezone.now().weekday()]
+        except Exception:
+            dia_actual = None
+        if dia_actual:
+            clases = ClaseProgramada.objects.filter(dia=dia_actual)
 
     serializer = claseProgramadaSerializer(clases, many=True)
     return Response(serializer.data)
