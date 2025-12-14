@@ -8,10 +8,17 @@ from django.utils import timezone
 from rest_framework.parsers import MultiPartParser, FormParser
 import openpyxl
 from openpyxl.styles import Font
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from functools import wraps
+from datetime import timedelta, date, datetime
+from django.db.models import Count, Sum, Q
+from django.db import models
+from .models import Membresia, Asistencia, Pago
+import qrcode
+from django.shortcuts import redirect
+
 
 # Create your views here.
 
@@ -664,3 +671,235 @@ def marcar_presente(request, reserva_id):
     reserva.save()
 
     return Response({"mensaje": "Asistencia registrada"})
+
+
+def get_start_date(range):
+    now = timezone.now()
+
+    if range == "day":
+        return now - timedelta(days=1)
+    if range == "week":
+        return now - timedelta(weeks=1)
+    if range == "month":
+        return now - timedelta(days=30)
+    if range == "6months":
+        return now - timedelta(days=180)
+    if range == "year":
+        return now - timedelta(days=365)
+
+    return now - timedelta(days=30)
+
+
+@api_view(["GET"])
+def estadisticas_membresias(request):
+    range = request.GET.get("range", "month")
+    start_date = get_start_date(range)
+
+    data = (
+        Membresia.objects
+        .filter(start_date__gte=start_date)
+        .values("start_date__month")
+        .annotate(total=Count("id"))
+        .order_by("start_date__month")
+    )
+
+    return Response(data)
+
+
+@api_view(["GET"])
+def estadisticas_asistencia(request):
+    range = request.GET.get("range", "month")
+    start_date = get_start_date(range)
+
+    data = (
+        Asistencia.objects
+        .filter(fecha_reserva__gte=start_date)
+        .values("clase__tipo")
+        .annotate(
+            total=Count("id"),
+            presentes=Count("id", filter=Q(presente=True))
+        )
+    )
+
+    result = []
+    for d in data:
+        porcentaje = (d["presentes"] / d["total"]) * 100 if d["total"] > 0 else 0
+        result.append({
+            "clase": d["clase__tipo"],
+            "porcentaje": round(porcentaje, 1)
+        })
+
+    return Response(result)
+
+
+@api_view(["GET"])
+def estadisticas_pagos(request):
+    range = request.GET.get("range", "month")
+    start_date = get_start_date(range)
+
+    data = (
+        Pago.objects
+        .filter(fecha__gte=start_date, estado="Aprobado")
+        .values("fecha__month")
+        .annotate(total=Sum("monto"))
+        .order_by("fecha__month")
+    )
+
+    return Response(data)
+
+
+@api_view(["GET"])
+def clases_hoy(request):
+    hoy = date.today()
+
+    clases = ClaseProgramada.objects.filter(fecha=hoy)
+
+    data = [
+        {
+            "id": c.id,
+            "tipo": c.tipo,
+            "horario": c.horario,
+            "fecha": c.fecha.strftime("%d-%m-%Y"),
+        }
+        for c in clases
+    ]
+
+    return Response(data)
+
+
+@api_view(["POST"])
+def confirmar_asistencia(request):
+    usuario_id = request.data.get("usuario_id")
+    clase_id = request.data.get("clase_id")
+
+    try:
+        reserva = ReservaClase.objects.get(
+            usuario_id=usuario_id,
+            clase_id=clase_id,
+            estado="Pendiente"
+        )
+
+        reserva.estado = "Presente"
+        reserva.save()
+
+        return Response(
+            {"message": "Asistencia confirmada"},
+            status=status.HTTP_200_OK
+        )
+
+    except ReservaClase.DoesNotExist:
+        return Response(
+            {"error": "Reserva no válida"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+def procesar_ausencias():
+    hoy = timezone.now().date()
+
+    reservas = ReservaClase.objects.filter(
+        estado="Pendiente",
+        clase__fecha__lt=hoy
+    )
+
+    for reserva in reservas:
+        reserva.estado = "Ausente"
+        reserva.save()
+
+        membresia = Membresia.objects.filter(
+            usuario=reserva.usuario,
+            is_active=True
+        ).first()
+
+        if membresia:
+            membresia.clases_disponibles += 1
+            membresia.save()
+
+@api_view(["GET"])
+def asistentes_por_clase(request, clase_id):
+    reservas = ReservaClase.objects.filter(
+        clase_id=clase_id,
+        estado="Presente"
+    )
+
+    data = [
+        {
+            "nombre": r.usuario.nombre,
+            "apellido": r.usuario.apellido
+        }
+        for r in reservas
+    ]
+
+    return Response(data)
+
+
+@api_view(["GET"])
+def generar_qr(request, clase_id):
+    url = f"http://localhost:5173/asistencia/confirmar/{clase_id}"
+
+    img = qrcode.make(url)
+    response = HttpResponse(content_type="image/png")
+    img.save(response, "PNG")
+    return response
+
+
+@api_view(["GET"])
+def historial_uso(request, user_id):
+    reservas = ReservaClase.objects.filter(
+        usuario_id=user_id
+    ).exclude(estado="Pendiente")
+
+    data = [
+        {
+            "tipo": r.clase.tipo,
+            "fecha": r.clase.fecha.strftime("%d-%m-%Y"),
+            "horario": r.clase.horario,
+            "estado": r.estado
+        }
+        for r in reservas
+    ]
+
+    return Response(data)
+
+def clases_por_fecha(request):
+    fecha = request.GET.get("fecha")
+
+    if not fecha:
+        return JsonResponse([], safe=False)
+
+    try:
+        fecha_obj = datetime.strptime(fecha, "%Y-%m-%d").date()
+    except ValueError:
+        return JsonResponse([], safe=False)
+
+    clases = ClaseProgramada.objects.filter(fecha=fecha_obj)
+
+    data = []
+    for c in clases:
+        data.append({
+            "id": c.id,
+            "tipo": c.tipo,
+            "horario": c.horario,
+            "fecha": c.fecha.strftime("%Y-%m-%d"),
+        })
+
+    return JsonResponse(data, safe=False)
+
+def registrar_asistencia_qr(request, clase_id):
+    if not request.user.is_authenticated:
+        return redirect("/login")
+
+    reserva = ReservaClase.objects.filter(
+        usuario=request.user,
+        clase_id=clase_id
+    ).first()
+
+    if not reserva:
+        return JsonResponse({"error": "No tienes reserva"}, status=403)
+
+    if reserva.estado == "Presente":
+        return JsonResponse({"message": "Ya registrada"})
+
+    reserva.estado = "Presente"
+    reserva.save()
+
+    return JsonResponse({"ok": True})

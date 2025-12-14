@@ -33,6 +33,8 @@ urlpatterns = [
     # Horario
     path("horario/", views.horario_list),
     path("horario/<int:pk>/", views.horario_delete),
+    path("historial-uso/<int:user_id>/", views.historial_uso),
+
 
     # CLASES DEL DÍA (solo una ruta)
     path("clases-hoy/", views.clases_de_dia),
@@ -41,16 +43,28 @@ urlpatterns = [
     path("inscritos/<int:clase_id>/", views.asistentes_clase),
     path("asistentes/<int:clase_id>/", views.asistentes_clase),
     path("asistencia/<int:reserva_id>/", views.marcar_presente),
+    path("asistentes/<int:clase_id>/", views.asistentes_por_clase),
 
     # Reservas
     path("reservar-clase/", views.reservar_clase),
     path("reservar-clase/<int:clase_id>/", views.reservar_clase),
     path("mis-reservas/<int:user_id>/", views.mis_reservas),
+    path("clases-hoy/", views.clases_hoy),
+    path("confirmar-asistencia/", views.confirmar_asistencia),
+    path("clases-por-fecha/", views.clases_por_fecha),
 
     # Pagos
     path("pagos/", views.pagos_list, name="pagos_list"),
     path("pagos/exportar/", views.exportar_pagos, name="exportar_pagos"),
     path("mis-pagos/<int:user_id>/", views.mis_pagos),
+
+    # Estadísticas
+    path("estadisticas/membresias/", views.estadisticas_membresias),
+    path("estadisticas/asistencia/", views.estadisticas_asistencia),
+    path("estadisticas/pagos/", views.estadisticas_pagos),
+
+    path("qr/<int:clase_id>/", views.generar_qr),
+
 ]
 
 if settings.DEBUG:

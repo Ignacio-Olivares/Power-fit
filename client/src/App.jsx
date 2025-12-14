@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import NavbarPublic from './components/layout/NavbarPublic';
 import Landing from './pages/public/Landing';
 import Login from './pages/public/Login';
@@ -22,20 +22,23 @@ import CreateCoach from './pages/coach/CreateCoach';
 import ManagePayments from './pages/coach/ManagePayments';
 import EditCoach from "./pages/coach/EditCoach";
 import ManageAttendance from "./pages/coach/ManageAttendance";
+import Statistics from "./pages/coach/Statistics";
+import AttendanceQR from "./pages/coach/AttendanceQR";
+
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         
-        {/* GRUPO 1: Rutas Públicas (Usan el Navbar) */}
+        {/* GRUPO 1: Rutas Públicas*/}
         <Route element={<NavbarPublic />}>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Route>
 
-        {/* GRUPO 2: Rutas Privadas (Sin Navbar público) */}
+        {/* GRUPO 2: Rutas Privadas*/}
         <Route path="/user/dashboard" element={<Dashboard />} />
         <Route path="/user/memberships" element={<Memberships />} />
         <Route path="/user/memberships/confirm" element={<ConfirmMembership />} />
@@ -57,7 +60,9 @@ function App() {
         <Route path="/coach/create" element={<CreateCoach />} />
         <Route path="/coach/edit/:id" element={<EditCoach />} />
         <Route path="/coach/asistencia" element={<ManageAttendance />} />
-        
+        <Route path="/coach/statistics" element={<Statistics />} />
+        <Route path="/coach/attendance-qr" element={<AttendanceQR />} />
+
       </Routes>
     </BrowserRouter>
   );

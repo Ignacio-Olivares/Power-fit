@@ -38,20 +38,25 @@ class Membresia(models.Model):
     start_date = models.DateField(default=timezone.now)
     end_date = models.DateField(blank=True, null=True)
 
-    # CAMBIOS:
-    # Estado por defecto 'Pendiente'. Solo será 'Activa' cuando el coach apruebe.
-    estado = models.CharField(max_length=20, default='Pendiente') 
-    is_active = models.BooleanField(default=False) 
-    # Campo para la imagen
+    clases_disponibles = models.IntegerField(blank=True, null=True)
+
+    estado = models.CharField(max_length=20, default='Pendiente')
+    is_active = models.BooleanField(default=False)
     comprobante = models.ImageField(upload_to='comprobantes/', null=True, blank=True)
 
     def save(self, *args, **kwargs):
+        # 🔹 Solo al crear la membresía
+        if not self.pk:
+            self.clases_disponibles = self.plan_clases
+
         if not self.end_date:
             self.end_date = self.start_date + timedelta(days=30)
+
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.usuario} → {self.plan_nombre}"
+
     
 class NuevoCoach(models.Model):
     nombre = models.CharField(max_length=15)

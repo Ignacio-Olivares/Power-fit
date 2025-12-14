@@ -1,48 +1,66 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, ClipboardCheck, Users } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Users, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ManageAttendance = () => {
-  const [clasesHoy, setClasesHoy] = useState([]);
+  const [clases, setClases] = useState([]);
   const [asistentes, setAsistentes] = useState([]);
   const [claseSeleccionada, setClaseSeleccionada] = useState(null);
-  const [loadingClases, setLoadingClases] = useState(true);
+  const [loadingClases, setLoadingClases] = useState(false);
   const [loadingAsistentes, setLoadingAsistentes] = useState(false);
 
   const navigate = useNavigate();
 
-  // 🔥 Cargar clases del día
-  const fetchClasesDeHoy = async () => {
+  // 🔹 Fecha seleccionada (por defecto hoy, formato YYYY-MM-DD)
+  const hoy = new Date().toISOString().split("T")[0];
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy);
+
+  // 🔹 Abrir QR
+  const abrirQR = (clase) => {
+    navigate("/coach/attendance-qr", {
+      state: { clase },
+    });
+  };
+
+  // 🔹 Cargar clases por fecha
+  const fetchClasesPorFecha = async (fecha) => {
     setLoadingClases(true);
+    setClaseSeleccionada(null);
+    setAsistentes([]);
+
     try {
-      const res = await fetch("http://127.0.0.1:8000/clases-hoy/");
+      const res = await fetch(
+        `http://127.0.0.1:8000/clases-por-fecha/?fecha=${fecha}`
+      );
       const data = await res.json();
-      setClasesHoy(data);
+      setClases(data);
     } catch (err) {
       console.error("Error al cargar clases:", err);
       alert("No se pudo conectar al servidor.");
     }
+
     setLoadingClases(false);
   };
 
-  // 🔥 Cargar asistentes de una clase
+  // 🔹 Cargar asistentes
   const fetchAsistentes = async (claseId) => {
     setClaseSeleccionada(claseId);
     setLoadingAsistentes(true);
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/asistentes/${claseId}/`);
+      const res = await fetch(
+        `http://127.0.0.1:8000/asistentes/${claseId}/`
+      );
       const data = await res.json();
       setAsistentes(data);
     } catch (err) {
-      console.error("Error al cargar asistentes:", err);
-      alert("No se pudo conectar al servidor.");
+      alert("No se pudo cargar asistentes.");
     }
 
     setLoadingAsistentes(false);
   };
 
-  // 🔥 Marcar asistencia
+  // 🔹 Marcar presente manual
   const marcarPresente = async (reservaId) => {
     try {
       const res = await fetch(
@@ -61,86 +79,116 @@ const ManageAttendance = () => {
           )
         );
       }
-    } catch (err) {
+    } catch {
       alert("No se pudo marcar asistencia.");
     }
   };
 
+  // 🔹 Cargar al iniciar
   useEffect(() => {
-    fetchClasesDeHoy();
-  }, []);
+    fetchClasesPorFecha(fechaSeleccionada);
+  }, [fechaSeleccionada]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Botón Volver */}
+      {/* Volver */}
       <button
-        className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium mb-6"
         onClick={() => navigate("/coach/panel")}
+        className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium mb-6"
       >
         <ArrowLeft size={20} />
         Volver al Panel
       </button>
 
       {/* Título */}
-      <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3 mb-6">
+      <h1 className="text-3xl font-bold flex items-center gap-3 mb-6">
         <ClipboardCheck className="text-green-600" />
         Control de Asistencia
       </h1>
 
-      {/* === LISTA DE CLASES DEL DÍA === */}
-      <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-200 mb-10">
-        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Users className="text-green-600" /> Clases de Hoy
+      {/* 📅 Selector de fecha */}
+      <div className="bg-white p-4 rounded-xl border shadow-sm mb-6 flex items-center gap-4">
+        <Calendar className="text-green-600" />
+        <input
+          type="date"
+          value={fechaSeleccionada}
+          onChange={(e) => setFechaSeleccionada(e.target.value)}
+          className="border rounded-lg px-3 py-2"
+        />
+      </div>
+
+      {/* === CLASES === */}
+      <div className="bg-white p-6 rounded-2xl shadow-md border mb-10">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Users className="text-green-600" />
+          Clases del Día
         </h2>
 
         {loadingClases ? (
-          <p className="text-gray-600">Cargando clases...</p>
-        ) : clasesHoy.length === 0 ? (
-          <p className="text-gray-500">No hay clases programadas para hoy.</p>
+          <p className="text-gray-500">Cargando clases...</p>
+        ) : clases.length === 0 ? (
+          <p className="text-gray-500">
+            No hay clases programadas para esta fecha.
+          </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {clasesHoy.map((clase) => (
-              <button
+            {clases.map((clase) => (
+              <div
                 key={clase.id}
-                onClick={() => fetchAsistentes(clase.id)}
-                className={`p-4 rounded-xl border shadow-sm text-left transition hover:shadow-md ${
+                className={`p-4 rounded-xl border shadow-sm ${
                   claseSeleccionada === clase.id
                     ? "border-green-500 bg-green-50"
                     : "border-gray-200 bg-white"
                 }`}
               >
-                <p className="font-semibold text-gray-900">{clase.tipo}</p>
-                <p className="text-gray-600 text-sm">{clase.horario}</p>
-              </button>
+                <p className="font-semibold">{clase.tipo}</p>
+                <p className="text-sm text-gray-600 mb-3">
+                  {clase.horario}
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => fetchAsistentes(clase.id)}
+                    className="px-3 py-2 text-sm bg-gray-100 rounded-lg"
+                  >
+                    Ver asistentes
+                  </button>
+
+                  <button
+                    onClick={() => abrirQR(clase)}
+                    className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg"
+                  >
+                    Abrir QR
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* === LISTA DE ASISTENTES === */}
+      {/* === ASISTENTES === */}
       {claseSeleccionada && (
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="bg-white p-6 rounded-2xl shadow-md border">
+          <h2 className="text-xl font-bold mb-4">
             Asistentes de la Clase
           </h2>
 
           {loadingAsistentes ? (
             <p className="text-gray-500">Cargando asistentes...</p>
           ) : asistentes.length === 0 ? (
-            <p className="text-gray-500">Ningún alumno inscrito aún.</p>
+            <p className="text-gray-500">Ningún alumno inscrito.</p>
           ) : (
             <div className="space-y-3">
               {asistentes.map((st) => (
                 <div
                   key={st.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-gray-200 shadow-sm"
+                  className="flex justify-between items-center p-3 border rounded-lg"
                 >
-                  {/* Nombre del alumno */}
-                  <span className="font-semibold text-gray-900">
+                  <span>
                     {st.nombre} {st.apellido}
                   </span>
 
-                  {/* Estado */}
                   {st.presente ? (
                     <span className="text-green-600 font-semibold">
                       Presente ✔
@@ -148,7 +196,7 @@ const ManageAttendance = () => {
                   ) : (
                     <button
                       onClick={() => marcarPresente(st.id)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg"
                     >
                       Marcar Presente
                     </button>

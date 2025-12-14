@@ -1,7 +1,5 @@
-// src/pages/user/Classes.jsx
 import { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 import baileImg from "../../assets/images/baile.jpeg";
@@ -14,6 +12,7 @@ import Button from "../../components/common/Button";
 
 const Classes = () => {
   const [clases, setClases] = useState([]);
+  const [weekOffset, setWeekOffset] = useState(0);
   const navigate = useNavigate();
 
   const imagenes = {
@@ -25,8 +24,8 @@ const Classes = () => {
 
   const ordenarDias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-  // 🔵 Fechas de esta semana en horario chileno
-  const getDatesThisWeek = () => {
+  // Fechas por semana (con offset)
+  const getDatesThisWeek = (offset = 0) => {
     const chileYmd = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Santiago",
     }).format(new Date());
@@ -38,7 +37,7 @@ const Classes = () => {
     const diffToMonday = (dow + 6) % 7;
 
     const monday = new Date(chileToday);
-    monday.setDate(chileToday.getDate() - diffToMonday);
+    monday.setDate(chileToday.getDate() - diffToMonday + offset * 7);
 
     const days = {};
     for (let i = 0; i < ordenarDias.length; i++) {
@@ -55,12 +54,12 @@ const Classes = () => {
     return days;
   };
 
-  const fechasSemana = getDatesThisWeek();
+  const fechasSemana = getDatesThisWeek(weekOffset);
 
   const getChileYmd = () =>
-    new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(
-      new Date()
-    );
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+    }).format(new Date());
 
   const isClassInPast = (clase) => {
     try {
@@ -87,29 +86,39 @@ const Classes = () => {
       try {
         const res = await fetch("http://127.0.0.1:8000/horario/");
         const data = await res.json();
+
         setClases(
-          data.sort(
-            (a, b) =>
-              ordenarDias.indexOf(a.dia) - ordenarDias.indexOf(b.dia)
-          )
+          data
+            .filter(
+              (c) =>
+                fechasSemana[c.dia] &&
+                c.fecha ===
+                  (() => {
+                    const [dd, mm, yyyy] = fechasSemana[c.dia].split("-");
+                    return `${yyyy}-${mm}-${dd}`;
+                  })()
+            )
+            .sort(
+              (a, b) =>
+                ordenarDias.indexOf(a.dia) - ordenarDias.indexOf(b.dia)
+            )
         );
       } catch (error) {
         console.error("Error al obtener clases:", error);
       }
     };
+
     fetchClases();
-  }, []);
+  }, [weekOffset]);
 
   const reservar = async (claseId) => {
-    // Redirigir al flujo de pago/confirmación
-    // useNavigate is already called at top-level; use that `navigate` here
     const claseObj = clases.find((c) => c.id === claseId);
     if (isClassInPast(claseObj)) {
       alert("No puedes reservar una clase que ya pasó.");
       return;
     }
 
-    navigate('/user/checkout', { state: { clase: claseObj } });
+    navigate("/user/checkout", { state: { clase: claseObj } });
   };
 
   return (
@@ -117,29 +126,41 @@ const Classes = () => {
       <div className="mb-6">
         <Link
           to="/user/dashboard"
-          className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors font-semibold"
+          className="flex items-center gap-2 text-gray-600 hover:text-green-600 font-semibold"
         >
           <ArrowLeft size={20} />
           Volver al Menú Principal
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">Clases Disponibles</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-4 text-center">
+        Clases Disponibles
+      </h1>
+
+      {/* 🆕 Navegación por semanas */}
+      <div className="flex justify-center gap-4 mb-8">
+        <Button onClick={() => setWeekOffset(weekOffset - 1)}>
+          ← Semana anterior
+        </Button>
+        <Button variant="secondary" onClick={() => setWeekOffset(0)}>
+          Semana actual
+        </Button>
+        <Button onClick={() => setWeekOffset(weekOffset + 1)}>
+          Semana siguiente →
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {clases.map((clase) => (
           <div
             key={clase.id}
-            className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200"
+            className="bg-white rounded-2xl shadow-md overflow-hidden border"
           >
-            {/* Día + Fecha */}
             <div className="bg-green-600 text-white text-center py-2 font-semibold">
-              <div className="flex flex-col">
-                <span>{clase.dia}</span>
-                <span className="text-xs font-normal">
-                  {fechasSemana[clase.dia] || ""}
-                </span>
-              </div>
+              <span>{clase.dia}</span>
+              <span className="block text-xs font-normal">
+                {fechasSemana[clase.dia]}
+              </span>
             </div>
 
             <img
@@ -149,11 +170,11 @@ const Classes = () => {
             />
 
             <div className="p-5">
-              <h3 className="text-xl font-bold text-gray-800">{clase.tipo}</h3>
+              <h3 className="text-xl font-bold">{clase.tipo}</h3>
               <p className="text-green-600 font-medium">{clase.horario}</p>
 
               <p className="text-gray-500 mt-2">
-                <strong>Cupos disponibles: </strong>
+                <strong>Cupos disponibles:</strong>{" "}
                 {clase.cupos_disponibles}
               </p>
 
@@ -177,7 +198,7 @@ const Classes = () => {
 
       {clases.length === 0 && (
         <p className="text-gray-500 mt-10 text-center text-lg">
-          No hay clases programadas por ahora.
+          No hay clases programadas para esta semana.
         </p>
       )}
     </div>

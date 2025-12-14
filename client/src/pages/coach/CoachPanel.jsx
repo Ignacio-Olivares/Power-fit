@@ -8,13 +8,14 @@ import {
   User,
   DollarSign,
   LogOut,
+  BarChart3,
+  QrCode
 } from "lucide-react";
 import DashboardCard from "../../components/common/DashboardCard";
 
 const CoachPanel = () => {
   const navigate = useNavigate();
 
-  // 🔹 Obtener nombre y apellido del coach logueado
   const nombre = localStorage.getItem("userName") || "";
   const apellido = localStorage.getItem("userApellido") || "";
 
@@ -26,7 +27,7 @@ const CoachPanel = () => {
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-6">
 
-      {/* 🔴 BOTÓN CERRAR SESIÓN — alineado a la derecha */}
+      {/* Cerrar sesión */}
       <div className="flex justify-end mb-6">
         <button
           onClick={handleLogout}
@@ -37,14 +38,15 @@ const CoachPanel = () => {
         </button>
       </div>
 
-      {/* 🔹 Bienvenida con nombre del coach */}
+      {/* Bienvenida */}
       <h1 className="text-3xl font-bold text-gray-900">
         Bienvenid@ {nombre} {apellido}
       </h1>
       <p className="text-gray-500 mb-10">Panel de Coach PowerFit</p>
 
-      {/* Grid de tarjetas */}
+      {/* Tarjetas */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
         <DashboardCard
           Icon={CreditCard}
           title="Membresías"
@@ -76,7 +78,7 @@ const CoachPanel = () => {
           buttonText="Ver Clases de Hoy"
           to="/coach/asistencia"
         />
-          
+
         <DashboardCard
           Icon={User}
           title="Coaches"
@@ -92,6 +94,24 @@ const CoachPanel = () => {
           buttonText="Ver Pagos"
           to="/coach/payments"
         />
+
+        <DashboardCard
+          Icon={BarChart3}
+          title="Estadísticas"
+          subtitle="Indicadores de gestión del gimnasio"
+          buttonText="Ver Estadísticas"
+          to="/coach/statistics"
+        />
+
+        {/* 🆕 CONTROL DE ASISTENCIA QR */}
+        <DashboardCard
+          Icon={QrCode}
+          title="Control de Asistencia"
+          subtitle="Registrar asistencia con código QR"
+          buttonText="Abrir QR"
+          to="/coach/attendance-qr"
+        />
+
       </section>
     </main>
   );
