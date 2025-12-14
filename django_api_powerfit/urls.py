@@ -43,6 +43,7 @@ urlpatterns = [
     path("inscritos/<int:clase_id>/", views.asistentes_clase),
     path("asistentes/<int:clase_id>/", views.asistentes_clase),
     path("asistencia/<int:reserva_id>/", views.marcar_presente),
+    path("asistencia/qr/<int:clase_id>/", views.registrar_asistencia_qr),
     path("asistentes/<int:clase_id>/", views.asistentes_por_clase),
 
     # Reservas

@@ -18,6 +18,7 @@ from django.db import models
 from .models import Membresia, Asistencia, Pago
 import qrcode
 from django.shortcuts import redirect
+from django.core.mail import send_mail
 
 
 # Create your views here.
@@ -903,3 +904,31 @@ def registrar_asistencia_qr(request, clase_id):
     reserva.save()
 
     return JsonResponse({"ok": True})
+
+
+def revisar_membresias():
+    hoy = timezone.now().date()
+    aviso = hoy + timedelta(days=3)
+
+    membresias = Membresia.objects.filter(is_active=True)
+
+    for m in membresias:
+        # 🔔 Por vencer
+        if m.end_date == aviso:
+            send_mail(
+                subject="Tu membresía está por vencer",
+                message=f"Hola {m.usuario.nombre}, tu membresía vence el {m.end_date}.",
+                from_email="powerfit@gym.cl",
+                recipient_list=[m.usuario.correo],
+            )
+
+        # ⛔ Vencida
+        if m.end_date < hoy:
+            send_mail(
+                subject="Tu membresía ha vencido",
+                message=f"Hola {m.usuario.nombre}, tu membresía venció el {m.end_date}.",
+                from_email="powerfit@gym.cl",
+                recipient_list=[m.usuario.correo],
+            )
+            m.is_active = False
+            m.save()
