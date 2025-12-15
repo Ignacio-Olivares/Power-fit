@@ -14,6 +14,9 @@ const Register = () => {
     password: ''
   });
 
+  // Estado para errores de validación
+  const [errors, setErrors] = useState({});
+
   // Estado para controlar la visibilidad del modal de éxito
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -22,16 +25,67 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Limpiar error cuando el usuario empiece a escribir
+    if (errors[e.target.name]) {
+      setErrors({
+        ...errors,
+        [e.target.name]: ''
+      });
+    }
+  };
+
+  // Función de validación
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Validar nombre
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'El nombre es obligatorio.';
+    } else if (formData.nombre.length < 2) {
+      newErrors.nombre = 'El nombre debe tener al menos 2 caracteres.';
+    }
+
+    // Validar apellido
+    if (!formData.apellido.trim()) {
+      newErrors.apellido = 'El apellido es obligatorio.';
+    } else if (formData.apellido.length < 2) {
+      newErrors.apellido = 'El apellido debe tener al menos 2 caracteres.';
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim()) {
+      newErrors.email = 'El correo electrónico es obligatorio.';
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Ingresa un correo electrónico válido.';
+    }
+
+    // Validar contraseña
+    if (!formData.password) {
+      newErrors.password = 'La contraseña es obligatoria.';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres.';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'La contraseña debe contener al menos una letra minúscula, una mayúscula y un número.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     const submit = async () => {
       try {
         const payload = {
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          correo: formData.email,
+          nombre: formData.nombre.trim(),
+          apellido: formData.apellido.trim(),
+          correo: formData.email.trim().toLowerCase(),
           password: formData.password
         };
 
@@ -49,7 +103,15 @@ const Register = () => {
         } else {
           const err = await res.json();
           console.error('Error al registrar:', err);
-          alert('Error al registrar: ' + (err.detail || JSON.stringify(err)));
+          
+          // Manejar errores específicos del backend
+          if (err.correo && err.correo[0] === "Este correo electrónico ya está registrado.") {
+            setErrors({ email: 'Este correo electrónico ya está registrado.' });
+          } else if (err.password) {
+            setErrors({ password: err.password[0] });
+          } else {
+            alert('Error al registrar: ' + (err.detail || JSON.stringify(err)));
+          }
         }
       } catch (error) {
         console.error('Network error:', error);
@@ -100,9 +162,10 @@ const Register = () => {
               placeholder="Juan"
               value={formData.nombre}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
+              className={`w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 outline-none ${errors.nombre ? 'border-red-500' : 'border-gray-300'}`}
               required
             />
+            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
           </div>
 
           <div>
@@ -113,22 +176,24 @@ const Register = () => {
               placeholder="Pérez"
               value={formData.apellido}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
+              className={`w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 outline-none ${errors.apellido ? 'border-red-500' : 'border-gray-300'}`}
               required
             />
+            {errors.apellido && <p className="text-red-500 text-xs mt-1">{errors.apellido}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Correo electrónico o teléfono</label>
             <input 
-              type="text" 
+              type="email" 
               name="email"
               placeholder="tu@correo.com"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
+              className={`w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 outline-none ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
               required
             />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
           </div>
 
           <div>
@@ -139,9 +204,11 @@ const Register = () => {
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
+              className={`w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 outline-none ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
               required
             />
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            <p className="text-xs text-gray-500 mt-1">Debe tener al menos 8 caracteres, con mayúscula, minúscula y número.</p>
           </div>
 
           <Button type="submit" variant="primary" className="w-full py-3 mt-2">

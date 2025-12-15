@@ -146,7 +146,17 @@ def comprar_membresia_list(request):
     except Registro.DoesNotExist:
         return Response({"error": "Usuario no encontrado"}, status=404)
 
-    # 2. Crear membresía en estado Pendiente
+    # 2. Verificar si el usuario ya tiene una membresía activa
+    membresia_activa = Membresia.objects.filter(
+        usuario=usuario_instancia,
+        is_active=True,
+        end_date__gte=timezone.now().date()
+    ).exists()
+
+    if membresia_activa:
+        return Response({"error": "El usuario ya tiene una membresía activa. No puede adquirir otra hasta que expire."}, status=400)
+
+    # 3. Crear membresía en estado Pendiente
     nueva_membresia = Membresia.objects.create(
         usuario=usuario_instancia,
         plan_nombre=request.data.get("plan_nombre"),
@@ -157,7 +167,7 @@ def comprar_membresia_list(request):
         is_active=False
     )
 
-    # 3. 🔥 Crear registro de pago automático
+    # 4. 🔥 Crear registro de pago automático
     Pago.objects.create(
         usuario=usuario_instancia,
         tipo="membresía",

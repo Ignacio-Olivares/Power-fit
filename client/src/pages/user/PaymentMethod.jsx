@@ -9,6 +9,7 @@ const PaymentMethod = () => {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('transferencia');
   const [selectedFile, setSelectedFile] = useState(null); 
+  const [errors, setErrors] = useState({});
   
   const { plan } = location.state || {};
   const userId = localStorage.getItem("userId");
@@ -22,14 +23,29 @@ const PaymentMethod = () => {
   // Manejar selección de archivo
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      // Validar tipo de archivo
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setErrors({ file: 'Solo se permiten archivos de imagen (JPG, PNG, GIF) o PDF.' });
+        setSelectedFile(null);
+        return;
+      }
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors({ file: 'El archivo no puede superar los 5MB.' });
+        setSelectedFile(null);
+        return;
+      }
+      setSelectedFile(file);
+      setErrors({}); // Limpiar errores
     }
   };
 
   const handleFinalizePurchase = async () => {
     // Validación: Solo pedimos archivo si es transferencia
     if (paymentMethod === 'transferencia' && !selectedFile) {
-      alert("Por favor, adjunta el comprobante de pago.");
+      setErrors({ file: 'Por favor, adjunta el comprobante de pago.' });
       return;
     }
 
@@ -114,7 +130,7 @@ const PaymentMethod = () => {
                 {/* Subida de Archivo */}
                 <div className="pt-2">
                     <label className="block font-bold mb-2 text-gray-700 text-sm">Comprobante de Pago *</label>
-                    <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors bg-gray-50">
+                    <div className={`relative border-2 border-dashed rounded-lg p-4 text-center hover:border-green-500 transition-colors bg-gray-50 ${errors.file ? 'border-red-500' : 'border-gray-300'}`}>
                     <input 
                         type="file" 
                         accept="image/*,.pdf"
@@ -129,8 +145,9 @@ const PaymentMethod = () => {
                         {!selectedFile && <span className="text-xs text-gray-400 mt-1">Sin archivos seleccionados</span>}
                     </div>
                     </div>
+                    {errors.file && <p className="text-red-500 text-xs mt-2">{errors.file}</p>}
                     <p className="text-xs text-gray-400 mt-2 text-center">
-                        Tu membresía se activará una vez que el pago sea verificado
+                        Tu membresía se activará una vez que el pago sea verificado. Máximo 5MB, formatos: JPG, PNG, GIF, PDF.
                     </p>
                 </div>
             </div>

@@ -25,7 +25,6 @@ import ManageAttendance from "./pages/coach/ManageAttendance";
 import Statistics from "./pages/coach/Statistics";
 import AttendanceQR from "./pages/coach/AttendanceQR";
 
-
 function App() {
   return (
     <BrowserRouter>
